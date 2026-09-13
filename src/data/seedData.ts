@@ -2,14 +2,14 @@ import { Category, MenuItem, DiningTable, RestaurantProfile, ShiftSession } from
 
 export const RESTAURANT_PROFILE: RestaurantProfile = {
   name: "SOUTHERN SPOON",
-  branch: "Galle Fort Branch",
-  address: "42, Church Street, Galle Fort",
-  city: "Galle 80000, Sri Lanka",
-  hotline: "+94 (091) 224-8890 / +94 77 345 6789",
+  branch: "Labuduwa, Galle",
+  address: "Labuduwa, Galle",
+  city: "Galle, Sri Lanka",
+  hotline: "0707555855 / 077 523 1931",
   tax_number: "VAT: 114872900-7000",
   wifi_ssid: "SouthernSpoon_Guest",
   wifi_pass: "southernspoon2026",
-  footer_message: "Ayubowan! Bohoma Sthuthi for dining at Southern Spoon Galle.",
+  footer_message: "Ayubowan! Bohoma Sthuthi for dining at Southern Spoon.",
 };
 
 export const INITIAL_CATEGORIES: Category[] = [
@@ -568,7 +568,7 @@ export const INITIAL_SHIFT: ShiftSession = {
   id: 101,
   cashier_name: "Sameera (Head Cashier)",
   register_number: "REG-01",
-  branch_name: "Galle Fort Main Branch",
+  branch_name: "Labuduwa, Galle",
   opening_float: 15000.0, // Rs. 15,000 float in LKR notes & coins
   opened_at: new Date().toISOString().split('T')[0] + " 08:30:00",
   status: "open",
