@@ -75,8 +75,8 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Menu Items Grid */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-5 scrollbar-thin scrollbar-thumb-slate-800">
+          {/* Menu Items Grid - Optimized for 4:3 square monitors (3-4 columns) */}
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 scrollbar-thin scrollbar-thumb-slate-800">
             {filteredItems.length === 0 ? (
               <div className="h-64 flex flex-col items-center justify-center text-slate-500">
                 <Utensils className="w-10 h-10 mb-2 opacity-40" />
@@ -84,7 +84,7 @@ export const App: React.FC = () => {
                 <p className="text-xs text-slate-600 mt-1">Try clearing filters or search keywords.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
                 {filteredItems.map((item) => (
                   <MenuItemCard key={item.id} item={item} />
                 ))}
@@ -93,8 +93,8 @@ export const App: React.FC = () => {
           </div>
         </main>
 
-        {/* Right Side: Live Order Cart & Settle Panel */}
-        <aside className="h-full">
+        {/* Right Side: Live Order Cart & Settle Panel - Compact on 4:3 Square Screens */}
+        <aside className="h-full shrink-0">
           <OrderCart />
         </aside>
       </div>

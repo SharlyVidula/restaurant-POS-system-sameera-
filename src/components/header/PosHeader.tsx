@@ -57,43 +57,42 @@ export const PosHeader: React.FC = () => {
 
   return (
     <>
-      <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-2 flex items-center justify-between shadow-lg sticky top-0 z-30 select-none">
+      <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-3 py-1.5 flex items-center justify-between shadow-lg sticky top-0 z-30 select-none overflow-x-auto scrollbar-none">
         {/* Restaurant Brand & Branch */}
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-slate-950 flex items-center justify-center shadow-lg shadow-amber-950/40 border border-amber-500/40 p-0.5 relative group overflow-hidden shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div className="w-9 h-9 rounded-lg bg-slate-950 flex items-center justify-center shadow-md border border-amber-500/40 p-0.5 relative shrink-0">
             <img 
               src={southernSpoonLogo} 
               alt="Southern Spoon" 
-              className="w-full h-full object-cover rounded-lg"
+              className="w-full h-full object-cover rounded-md"
             />
-            <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-amber-400/20 pointer-events-none" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-extrabold text-sm lg:text-base tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-amber-200">
+            <div className="flex items-center gap-1.5">
+              <h1 className="font-extrabold text-sm tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-amber-200">
                 {restaurant.name}
               </h1>
-              <span className="bg-amber-950/90 text-amber-300 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border border-amber-700/60">
+              <span className="bg-amber-950/90 text-amber-300 text-[9px] uppercase font-bold px-1.5 py-0.2 rounded border border-amber-700/60">
                 {restaurant.branch}
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
-              <span className="font-medium text-amber-500/90">Authentic Sri Lankan Cuisine</span>
+            <p className="text-[10px] text-slate-400 flex items-center gap-1.5">
+              <span className="font-medium text-amber-500/90">Authentic Cuisine</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-              <span className="text-emerald-400 font-mono text-[10px]">Offline POS</span>
+              <span className="text-emerald-400 font-mono text-[9px]">Offline</span>
             </p>
           </div>
         </div>
 
       {/* Order Mode Switcher */}
-      <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shadow-inner">
+      <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800 shadow-inner shrink-0">
         {orderTypes.map(({ type, label, icon }) => {
           const isActive = orderType === type;
           return (
             <button
               key={type}
               onClick={() => setOrderType(type)}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
                 isActive
                   ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-md font-bold'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
@@ -102,7 +101,7 @@ export const PosHeader: React.FC = () => {
               {icon}
               <span>{label}</span>
               {type === 'dine_in' && selectedTable && (
-                <span className="ml-1 px-1.5 py-0.2 text-[10px] bg-slate-900/80 text-amber-300 rounded font-mono font-bold">
+                <span className="ml-0.5 px-1 text-[10px] bg-slate-900/80 text-amber-300 rounded font-mono font-bold">
                   {selectedTable.table_number}
                 </span>
               )}
@@ -113,20 +112,20 @@ export const PosHeader: React.FC = () => {
         {orderType === 'dine_in' && (
           <button
             onClick={openTableModal}
-            className={`ml-1 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+            className={`ml-0.5 flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold border transition-all ${
               selectedTable
                 ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
                 : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30 animate-pulse'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>{selectedTable ? `Table: ${selectedTable.table_number}` : 'Select Table'}</span>
+            <span>{selectedTable ? `T:${selectedTable.table_number}` : 'Table'}</span>
           </button>
         )}
       </div>
 
       {/* Quick Action Tools & Shift Controls */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 shrink-0">
         {/* Cash Drawer Kick Button */}
         <button
           onClick={() => triggerDrawerKick('Manual Cash Drawer Open')}

@@ -39,7 +39,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item }) => {
   return (
     <div
       onClick={handleCardClick}
-      className={`group relative rounded-2xl border transition-all duration-200 flex flex-col justify-between p-3.5 select-none ${
+      className={`group relative rounded-2xl border transition-all duration-200 flex flex-col justify-between p-2.5 sm:p-3 select-none ${
         !item.is_available
           ? 'bg-slate-950/40 border-slate-800 opacity-60 grayscale cursor-not-allowed'
           : 'bg-slate-900/80 hover:bg-slate-800/90 border-slate-800/80 hover:border-amber-500/50 hover:shadow-xl hover:shadow-amber-950/20 active:scale-[0.98] cursor-pointer'

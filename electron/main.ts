@@ -14,10 +14,10 @@ function createWindow() {
   const iconPath = path.join(__dirname, '../public/logo.ico');
 
   mainWindow = new BrowserWindow({
-    width: 1440,
-    height: 900,
-    minWidth: 1024,
-    minHeight: 700,
+    width: 1024,
+    height: 768,
+    minWidth: 800,
+    minHeight: 600,
     title: 'Southern Spoon - Restaurant POS',
     icon: iconPath,
     backgroundColor: '#070a12',
@@ -28,6 +28,9 @@ function createWindow() {
     },
     autoHideMenuBar: true,
   });
+
+  // Automatically maximize on POS terminals for clean full-screen experience
+  mainWindow.maximize();
 
   // Load from local Vite dev server in development or dist/index.html in production
   if (process.env.VITE_DEV_SERVER_URL) {

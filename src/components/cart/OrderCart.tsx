@@ -60,9 +60,9 @@ export const OrderCart: React.FC = () => {
   const discountOptions = [0, 5, 10, 15, 20];
 
   return (
-    <div className="w-full lg:w-[420px] bg-slate-900 border-l border-slate-800 flex flex-col h-full shadow-2xl select-none">
+    <div className="w-[320px] sm:w-[340px] lg:w-[350px] xl:w-[390px] bg-slate-900 border-l border-slate-800 flex flex-col h-full shadow-2xl select-none">
       {/* Cart Header */}
-      <div className="p-3.5 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
+      <div className="p-2.5 sm:p-3 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center font-bold">
             <ShoppingBag className="w-4 h-4" />
@@ -350,27 +350,27 @@ export const OrderCart: React.FC = () => {
         </div>
       </div>
 
-      {/* Action Footer Buttons */}
-      <div className="p-3 bg-slate-950 border-t border-slate-800 space-y-2">
-        <div className="grid grid-cols-2 gap-2">
+      {/* Action Footer Buttons - Optimized for 768px/1024px height */}
+      <div className="p-2.5 bg-slate-950 border-t border-slate-800 space-y-1.5">
+        <div className="grid grid-cols-2 gap-1.5">
           {/* Fire KOT Button */}
           <button
             onClick={fireKOT}
             disabled={cart.length === 0}
-            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 font-bold text-xs border border-slate-700 transition-all shadow-md active:scale-95"
+            className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 font-bold text-xs border border-slate-700 transition-all shadow-md active:scale-95"
           >
             <Send className="w-3.5 h-3.5 text-orange-400" />
-            <span>Fire KOT (Kitchen)</span>
+            <span>Fire KOT</span>
           </button>
 
           {/* Print Guest Bill Button */}
           <button
             onClick={printBillPreview}
             disabled={cart.length === 0}
-            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 font-bold text-xs border border-slate-700 transition-all shadow-md active:scale-95"
+            className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 font-bold text-xs border border-slate-700 transition-all shadow-md active:scale-95"
           >
             <Receipt className="w-3.5 h-3.5 text-amber-400" />
-            <span>Print Bill (Check)</span>
+            <span>Print Bill</span>
           </button>
         </div>
 
@@ -385,7 +385,7 @@ export const OrderCart: React.FC = () => {
             openPaymentModal();
           }}
           disabled={cart.length === 0}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black text-sm shadow-glow-amber transition-all active:scale-95 border border-amber-400/50"
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black text-sm shadow-glow-amber transition-all active:scale-95 border border-amber-400/50"
         >
           <CreditCard className="w-4 h-4" />
           <span>{orderType === 'dine_in' && !selectedTable ? 'Table & Pay' : 'Settle / Pay'}</span>
