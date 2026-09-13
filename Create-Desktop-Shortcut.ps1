@@ -10,8 +10,8 @@ if (-not (Test-Path $IconPath)) {
 }
 
 if (-not (Test-Path $TargetExe)) {
-    # If copied standalone without release folder
-    $TargetExe = Join-Path -Path $ScriptDir -ChildPath "Southern Spoon POS.exe"
+    # If release folder is not compiled yet, launch via launcher script
+    $TargetExe = Join-Path -Path $ScriptDir -ChildPath "Launch-SouthernSpoon-POS.bat"
 }
 
 $Shortcut = $WshShell.CreateShortcut($ShortcutPath)

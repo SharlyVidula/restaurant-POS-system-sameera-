@@ -39,5 +39,5 @@ if exist "release\Southern Spoon POS.exe" (
     exit
 )
 
-:: Fallback: Start via npm electron:dev if release binary is not yet compiled
-npm run electron:dev
+:: Fallback: Start Electron terminal directly
+npx electron .
