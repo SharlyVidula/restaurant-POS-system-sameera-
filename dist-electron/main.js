@@ -5,6 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
+const os_1 = __importDefault(require("os"));
 const child_process_1 = require("child_process");
 const util_1 = __importDefault(require("util"));
 const execPromise = util_1.default.promisify(child_process_1.exec);
@@ -54,22 +56,54 @@ function createWindow() {
 electron_1.app.whenReady().then(() => {
     createWindow();
     // IPC Handlers for ESC/POS hardware
-    electron_1.ipcMain.handle('print-receipt', async (_event, _rawHex) => {
-        console.log('[ESC/POS Hardware] Receipt dispatch command received');
-        return { success: true, message: 'Printed to thermal printer' };
+    // IPC Handlers for ESC/POS hardware
+    electron_1.ipcMain.handle('print-receipt', async (_event, rawHex) => {
+        try {
+            console.log(`[ESC/POS Hardware] Receipt dispatch command received (${rawHex ? rawHex.length : 0} bytes)`);
+            if (rawHex && rawHex.trim()) {
+                const tempPath = path_1.default.join(os_1.default.tmpdir(), 'pos_slip_dump.hex');
+                await fs_1.default.promises.writeFile(tempPath, rawHex.trim(), 'utf8');
+                const scriptPath = path_1.default.join(__dirname, '../scripts/print_raw.ps1');
+                const { stdout } = await execPromise(`powershell -ExecutionPolicy Bypass -Command "$hex = Get-Content -Raw '${tempPath}'; & '${scriptPath}' -HexDump $hex"`);
+                console.log('[ESC/POS Hardware Output]', stdout.trim());
+                return { success: true, message: stdout.trim() };
+            }
+        }
+        catch (err) {
+            console.error('[ESC/POS Hardware Error]', err?.message);
+            return { success: false, error: err?.message };
+        }
+        return { success: true, message: 'Dispatched to printer' };
     });
-    // Direct silent printing bypassing prompt
+    // Direct silent printing bypassing prompt with automatic device name resolution
     electron_1.ipcMain.handle('silent-print', async (event) => {
         const win = electron_1.BrowserWindow.fromWebContents(event.sender);
         if (win) {
-            win.webContents.print({
-                silent: true,
-                printBackground: true,
-            }, (success, failureReason) => {
-                if (!success)
-                    console.error('[Silent Print Error]', failureReason);
-            });
-            return { success: true };
+            try {
+                const printers = await win.webContents.getPrintersAsync();
+                const targetPrinter = printers.find(p => p.isDefault) ||
+                    printers.find(p => p.name.toUpperCase().includes('XP') || p.name.toUpperCase().includes('POS') || p.name.toUpperCase().includes('THERMAL')) ||
+                    printers[0];
+                const deviceName = targetPrinter ? targetPrinter.name : '';
+                console.log(`[Silent Print] Target device: "${deviceName}"`);
+                win.webContents.print({
+                    silent: true,
+                    printBackground: true,
+                    deviceName: deviceName,
+                    margins: { marginType: 'none' }
+                }, (success, failureReason) => {
+                    if (!success) {
+                        console.error('[Silent Print Error]', failureReason);
+                    }
+                    else {
+                        console.log('[Silent Print Success] Dispatched to', deviceName);
+                    }
+                });
+                return { success: true };
+            }
+            catch (e) {
+                console.error('[Silent Print Exception]', e.message);
+            }
         }
         return { success: false };
     });

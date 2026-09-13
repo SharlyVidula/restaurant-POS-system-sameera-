@@ -69,7 +69,11 @@ export const PrintPreviewModal: React.FC = () => {
 
   const handlePrint = () => {
     setPrintSuccessNotice(true);
-    // Direct commercial POS silent print (bypasses print options modal)
+    // 1. Commercial POS direct ESC/POS hardware print (sends raw bytes to thermal printer)
+    if (typeof (window as any).electronAPI?.printReceipt === 'function' && currentHexDump) {
+      (window as any).electronAPI.printReceipt(currentHexDump);
+    }
+    // 2. Direct silent kiosk HTML print fallback
     if (typeof (window as any).electronAPI?.silentPrint === 'function') {
       (window as any).electronAPI.silentPrint();
     } else {
