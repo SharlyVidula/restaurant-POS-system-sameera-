@@ -7,6 +7,7 @@ import {
   Cookie, 
   GlassWater, 
   CupSoda, 
+  Sparkles,
   LayoutGrid,
   Search,
   X
@@ -41,6 +42,12 @@ export const CategoryTabs: React.FC = () => {
         return <GlassWater className="w-3.5 h-3.5 text-emerald-400" />;
       case 'Desserts':
         return <Cookie className="w-3.5 h-3.5 text-blue-400" />;
+      case 'Soft Drinks':
+      case 'Beverages':
+        return <CupSoda className="w-3.5 h-3.5 text-cyan-400" />;
+      case 'Extras':
+      case 'Short Eats':
+        return <Sparkles className="w-3.5 h-3.5 text-amber-400" />;
       default:
         return <LayoutGrid className="w-3.5 h-3.5" />;
     }

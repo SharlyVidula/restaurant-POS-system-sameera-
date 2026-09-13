@@ -20,8 +20,8 @@ import {
 } from '../data/seedData';
 
 const STORAGE_KEYS = {
-  CATEGORIES: 'galle_pos_categories_v3',
-  MENU_ITEMS: 'galle_pos_menu_items_v3',
+  CATEGORIES: 'galle_pos_categories_v4',
+  MENU_ITEMS: 'galle_pos_menu_items_v4',
   TABLES: 'galle_pos_tables_v1',
   ORDERS: 'galle_pos_orders_v1',
   SHIFTS: 'galle_pos_shifts_v1',

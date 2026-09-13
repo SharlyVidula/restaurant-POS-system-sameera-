@@ -20,6 +20,8 @@ export const INITIAL_CATEGORIES: Category[] = [
   { id: 5, name: "Chopsy", display_order: 5, icon: "Soup", color: "bg-yellow-600" },
   { id: 6, name: "Fruit Juice", display_order: 6, icon: "GlassWater", color: "bg-emerald-600" },
   { id: 7, name: "Desserts", display_order: 7, icon: "Cookie", color: "bg-blue-600" },
+  { id: 8, name: "Soft Drinks", display_order: 8, icon: "CupSoda", color: "bg-cyan-600" },
+  { id: 9, name: "Extras", display_order: 9, icon: "Sparkles", color: "bg-amber-500" },
 ];
 
 export const INITIAL_MENU_ITEMS: MenuItem[] = [
@@ -543,6 +545,90 @@ export const INITIAL_MENU_ITEMS: MenuItem[] = [
     description: "Fresh seasonal fruit bowl served with roasted cashew nuts and kithul treacle drizzle.",
     station: "Dessert Bar",
     default_notes: ["Extra Cashews", "Kithul Treacle"],
+  },
+  {
+    id: 704,
+    category_id: 7,
+    name: "Yoghurt",
+    base_price: 80,
+    is_available: true,
+    description: "යෝගට් - Chilled creamy sweet yoghurt cup.",
+    station: "Dessert Bar",
+    has_stepper: true,
+    badge: "Chilled",
+  },
+
+  // ==========================================
+  // 8. SOFT DRINKS & WATER (බීම වර්ග සහ ජලය)
+  // ==========================================
+  {
+    id: 801,
+    category_id: 8,
+    name: "Water Bottle (500ml)",
+    base_price: 80,
+    is_available: true,
+    description: "වතුර බෝතල් 500ml - Pure chilled mineral water.",
+    station: "Beverage Bar",
+    has_stepper: true,
+    badge: "500ml",
+  },
+  {
+    id: 802,
+    category_id: 8,
+    name: "Water Bottle (1L)",
+    base_price: 120,
+    is_available: true,
+    description: "වතුර බෝතල් 1L - 1 Litre pure chilled mineral water.",
+    station: "Beverage Bar",
+    has_stepper: true,
+    badge: "1 Litre",
+  },
+  {
+    id: 803,
+    category_id: 8,
+    name: "Coca-Cola Buddy",
+    base_price: 100,
+    is_available: true,
+    description: "කොකාකෝලා බඩී - Chilled 250ml buddy bottle.",
+    station: "Beverage Bar",
+    has_stepper: true,
+  },
+  {
+    id: 804,
+    category_id: 8,
+    name: "Sprite Buddy",
+    base_price: 100,
+    is_available: true,
+    description: "ස්ප්‍රයිට් බඩී - Chilled 250ml lemon-lime buddy bottle.",
+    station: "Beverage Bar",
+    has_stepper: true,
+  },
+  {
+    id: 805,
+    category_id: 8,
+    name: "EGB Can",
+    base_price: 150,
+    is_available: true,
+    description: "ඊජීබී කෑන් - Elephant House Ginger Beer 330ml can.",
+    station: "Beverage Bar",
+    has_stepper: true,
+    badge: "Popular",
+  },
+
+  // ==========================================
+  // 9. EXTRAS & ADD-ONS (අමතර කෑම)
+  // ==========================================
+  {
+    id: 901,
+    category_id: 9,
+    name: "Omelette",
+    base_price: 100,
+    is_available: true,
+    description: "ඔම්ලට් - Freshly prepared egg omelette with sliced onions and green chilies.",
+    station: "Wok Station",
+    has_stepper: true,
+    badge: "Fresh Egg",
+    default_notes: ["Spicy", "No Chilies", "Extra Pepper"],
   },
 ];
 
