@@ -492,6 +492,9 @@ export const usePosStore = create<PosState>((set, get) => ({
   triggerDrawerKick: (reason = 'Manual Open') => {
     buildDrawerKickEscPos();
     posDatabase.logDrawerKick(reason, get().activeShift.cashier_name);
+    if (typeof window !== 'undefined' && (window as any).electronAPI?.kickCashDrawer) {
+      (window as any).electronAPI.kickCashDrawer();
+    }
     set({ drawerPulseActive: true });
     setTimeout(() => {
       set({ drawerPulseActive: false });

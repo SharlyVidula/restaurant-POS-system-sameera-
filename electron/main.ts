@@ -81,7 +81,15 @@ app.whenReady().then(() => {
 
   ipcMain.handle('kick-cash-drawer', async () => {
     console.log('[ESC/POS Hardware] RJ11 Solenoid Kick Pulse 24V Triggered');
-    return { success: true, message: 'Drawer kicked' };
+    try {
+      const scriptPath = path.join(__dirname, '../scripts/kick_drawer.ps1');
+      const { stdout } = await execPromise(`powershell -ExecutionPolicy Bypass -File "${scriptPath}"`);
+      console.log('[Cash Drawer Output]', stdout.trim());
+      return { success: true, message: 'Drawer kicked', output: stdout };
+    } catch (err: any) {
+      console.error('[Cash Drawer Error]', err?.message);
+      return { success: false, error: err?.message };
+    }
   });
 
   ipcMain.handle('get-printer-status', async () => {
