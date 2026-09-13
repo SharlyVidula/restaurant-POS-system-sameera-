@@ -25,8 +25,6 @@ export const PaymentModal: React.FC = () => {
     orderType 
   } = usePosStore();
 
-  if (!isPaymentModalOpen) return null;
-
   const netTotal = getNetTotal();
   const [activeMethod, setActiveMethod] = useState<PaymentMethod>('cash');
   const [cashTendered, setCashTendered] = useState<number>(netTotal);
@@ -34,6 +32,8 @@ export const PaymentModal: React.FC = () => {
   const [cardProvider, setCardProvider] = useState<'Visa' | 'Mastercard' | 'Amex'>('Visa');
   const [qrRef, setQrRef] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  if (!isPaymentModalOpen) return null;
 
   // Sri Lankan currency denominations
   const denominations = [5000, 2000, 1000, 500, 100];

@@ -6,10 +6,8 @@ import { X, Plus, Minus, Check, Sparkles, ChefHat } from 'lucide-react';
 export const VariantModal: React.FC = () => {
   const { variantModalItem, closeVariantModal, addToCart } = usePosStore();
 
-  if (!variantModalItem) return null;
-
   const [selectedVariant, setSelectedVariant] = useState<ItemVariant | undefined>(
-    variantModalItem.variants && variantModalItem.variants.length > 0
+    variantModalItem?.variants && variantModalItem.variants.length > 0
       ? variantModalItem.variants[0]
       : undefined
   );
@@ -17,13 +15,16 @@ export const VariantModal: React.FC = () => {
   const [customNote, setCustomNote] = useState('');
   const [selectedPresetNotes, setSelectedPresetNotes] = useState<string[]>([]);
   
-  // Modifiers (for juices, kottu, etc.)
-  const isJuice = variantModalItem.category_id === 5;
-  const isKottu = variantModalItem.category_id === 3;
+  // Modifiers (for juices, kottu, fried rice, etc.)
+  const isJuice = variantModalItem?.category_id === 5;
+  const isKottu = variantModalItem?.category_id === 3;
+  const isFriedRice = variantModalItem?.category_id === 2;
 
   const [sugarLevel, setSugarLevel] = useState<'Normal Sugar' | 'Less Sugar' | 'No Sugar'>('Normal Sugar');
   const [withIce, setWithIce] = useState<boolean>(true);
   const [extraAddons, setExtraAddons] = useState<CartItemModifier[]>([]);
+
+  if (!variantModalItem) return null;
 
   const togglePresetNote = (note: string) => {
     if (selectedPresetNotes.includes(note)) {
@@ -196,14 +197,50 @@ export const VariantModal: React.FC = () => {
             </div>
           )}
 
-          {/* Kottu Station Add-ons */}
-          {isKottu && (
+          {/* Fried Rice Add-ons & Portion */}
+          {isFriedRice && (
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                Special Add-ons & Gravy
+                Portion Size & Add-ons
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {[
+                  { name: 'Large / Sharing Portion', price: 200 },
+                  { name: 'Fried Bullseye Egg', price: 80 },
+                  { name: 'Extra Chili Paste Cup', price: 50 },
+                  { name: 'Extra Roast Chicken Piece', price: 200 },
+                ].map((addon) => {
+                  const isChecked = !!extraAddons.find(a => a.name === addon.name);
+                  return (
+                    <button
+                      key={addon.name}
+                      onClick={() => toggleAddon(addon.name, addon.price)}
+                      className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${
+                        isChecked
+                          ? 'bg-amber-500/20 border-amber-500 text-amber-300'
+                          : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      <span className="text-xs font-semibold">{addon.name}</span>
+                      <span className="font-mono text-xs font-bold text-amber-400">
+                        +Rs. {addon.price}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Kottu Station Add-ons & Portion */}
+          {isKottu && (
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                Portion Size & Add-ons
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { name: 'Large / Sharing Portion', price: 200 },
                   { name: 'Extra Melted Cheese', price: 250 },
                   { name: 'Extra Curry Gravy Cup', price: 100 },
                   { name: 'Extra Roast Chicken Piece', price: 200 },

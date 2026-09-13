@@ -11,13 +11,13 @@ export const ZReportModal: React.FC = () => {
     performZClosure 
   } = usePosStore();
 
-  if (!isZReportModalOpen) return null;
-
   const expectedCash = activeShift.cash_drawer_expected;
   const [countedCash, setCountedCash] = useState<number>(expectedCash);
   const [closingCashier, setClosingCashier] = useState<string>(activeShift.cashier_name);
   const [closureNotes, setClosureNotes] = useState<string>('');
   const [isConfirmed, setIsConfirmed] = useState(false);
+
+  if (!isZReportModalOpen) return null;
 
   const discrepancy = countedCash - expectedCash;
 

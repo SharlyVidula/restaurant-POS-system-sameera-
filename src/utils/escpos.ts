@@ -269,6 +269,97 @@ export function buildCustomerReceiptEscPos(
 }
 
 /**
+ * Generate binary ESC/POS payload for Guest Check / Pre-payment Bill
+ */
+export function buildBillEscPos(
+  order: Order,
+  restaurant: RestaurantProfile,
+  width: 80 | 58 = 80
+): EscPosBuilder {
+  const printer = new EscPosBuilder(width);
+
+  // Header
+  printer.alignCenter()
+    .bold(true)
+    .doubleSize(true)
+    .text(restaurant.name)
+    .newLine()
+    .doubleSize(false)
+    .text(restaurant.branch)
+    .newLine()
+    .bold(true)
+    .text("=== GUEST CHECK / PROFORMA BILL ===")
+    .newLine()
+    .bold(false)
+    .text("*** NOT A TAX RECEIPT - PENDING PAYMENT ***")
+    .newLine()
+    .doubleLine();
+
+  // Order Details
+  printer.alignLeft()
+    .twoColumn(`Order: #${order.order_number}`, order.table_number ? `Table: ${order.table_number}` : `Type: ${order.order_type.toUpperCase()}`)
+    .twoColumn(`Date: ${order.created_at}`, `Server: ${order.cashier_name}`)
+    .line();
+
+  // Table Headers
+  if (width === 80) {
+    printer.threeColumn("ITEM / DESCRIPTION", "QTY", "AMOUNT (LKR)");
+  } else {
+    printer.twoColumn("ITEM (QTY)", "AMOUNT");
+  }
+  printer.line();
+
+  // Items
+  order.items.forEach(item => {
+    const formattedName = item.variant_name ? `${item.item_name} (${item.variant_name})` : item.item_name;
+    const priceStr = item.total_price.toLocaleString('en-LK', { minimumFractionDigits: 2 });
+
+    if (width === 80) {
+      printer.threeColumn(formattedName, `${item.quantity}x`, priceStr);
+    } else {
+      printer.twoColumn(`${item.quantity}x ${formattedName}`, priceStr);
+    }
+
+    if (item.notes) {
+      printer.text(`   * Note: ${item.notes}`).newLine();
+    }
+  });
+
+  printer.line();
+
+  // Totals
+  printer.alignRight();
+  printer.twoColumn("Subtotal:", `Rs. ${order.subtotal.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+
+  if (order.discount_amount > 0) {
+    printer.twoColumn(`Discount (${order.discount_percentage || 0}%):`, `- Rs. ${order.discount_amount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+  }
+
+  if (order.service_charge > 0) {
+    printer.twoColumn("Service Charge (10%):", `Rs. ${order.service_charge.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+  }
+
+  if (order.tax_amount > 0) {
+    printer.twoColumn("VAT (8%):", `Rs. ${order.tax_amount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+  }
+
+  printer.doubleLine();
+  printer.bold(true).doubleHeight(true);
+  printer.twoColumn("TOTAL PAYABLE:", `Rs. ${order.total_amount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+  printer.doubleHeight(false).bold(false);
+  printer.line();
+
+  printer.alignCenter()
+    .text("Please present this bill at the cashier desk")
+    .newLine()
+    .text("Cash, Credit/Debit Cards & LankaQR accepted")
+    .newLine()
+    .cut();
+
+  return printer;
+}
+
+/**
  * Generate binary ESC/POS payload for Kitchen Order Ticket (KOT)
  */
 export function buildKotEscPos(

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { usePosStore } from '../../store/posStore';
 import { Order } from '../../types';
 import { posDatabase } from '../../db/sqlite';
-import { buildCustomerReceiptEscPos, buildKotEscPos } from '../../utils/escpos';
+import { buildCustomerReceiptEscPos, buildKotEscPos, buildBillEscPos } from '../../utils/escpos';
 import { 
   X, 
   History, 
@@ -13,6 +13,7 @@ import {
   FileText, 
   Send,
   CreditCard,
+  Receipt,
   Banknote,
   QrCode
 } from 'lucide-react';
@@ -46,6 +47,7 @@ export const HistoryModal: React.FC = () => {
       plainText: `Reprint for #${order.order_number}`,
       hexDump: builder.getHexDump(),
       width: 80,
+      order,
     });
     closeHistoryModal();
   };
@@ -65,6 +67,29 @@ export const HistoryModal: React.FC = () => {
       plainText: `KOT Reprint for #${order.order_number}`,
       hexDump: builder.getHexDump(),
       width: 80,
+      order,
+      kotData: {
+        orderNumber: order.order_number,
+        orderType: order.order_type,
+        tableNumber: order.table_number,
+        items: order.items,
+        cashierName: order.cashier_name,
+        notes: order.notes,
+        createdAt: order.created_at,
+      }
+    });
+    closeHistoryModal();
+  };
+
+  const handlePrintBill = (order: Order) => {
+    const builder = buildBillEscPos(order, restaurant, 80);
+    setPrintPreview({
+      title: `Guest Check / Bill - #${order.order_number}`,
+      type: 'BILL',
+      plainText: `Guest Bill for #${order.order_number}`,
+      hexDump: builder.getHexDump(),
+      width: 80,
+      order,
     });
     closeHistoryModal();
   };
@@ -220,21 +245,29 @@ export const HistoryModal: React.FC = () => {
 
                 {/* Actions */}
                 <div className="pt-4 border-t border-slate-800 space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => handleReprintReceipt(selectedOrder)}
-                      className="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all border border-slate-700"
+                      className="py-2 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all border border-slate-700"
                     >
                       <Printer className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Reprint Receipt</span>
+                      <span>Receipt</span>
                     </button>
 
                     <button
                       onClick={() => handleReprintKOT(selectedOrder)}
-                      className="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all border border-slate-700"
+                      className="py-2 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all border border-slate-700"
                     >
                       <Send className="w-3.5 h-3.5 text-orange-400" />
-                      <span>Reprint KOT</span>
+                      <span>KOT Slip</span>
+                    </button>
+
+                    <button
+                      onClick={() => handlePrintBill(selectedOrder)}
+                      className="py-2 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all border border-slate-700"
+                    >
+                      <Receipt className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Guest Bill</span>
                     </button>
                   </div>
 

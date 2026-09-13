@@ -19,6 +19,7 @@ export const XReportModal: React.FC = () => {
       plainText: `X-Report generated at ${reportData.generated_at}`,
       hexDump: builder.getHexDump(),
       width: 80,
+      xReportData: reportData,
     });
     closeXReport();
   };

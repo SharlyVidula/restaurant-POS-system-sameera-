@@ -1,15 +1,51 @@
 {
-  "name": "galle-restaurant-pos",
+  "name": "southern-spoon-pos",
+  "productName": "Southern Spoon POS",
   "private": true,
   "version": "1.0.0",
+  "description": "Southern Spoon Restaurant POS - Offline Desktop System",
+  "author": "Southern Spoon",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "electron:dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
-    "electron:build": "tsc && vite build && electron-builder"
+    "electron:ts": "tsc -p tsconfig.electron.json && node -e \"fs.writeFileSync('dist-electron/package.json', JSON.stringify({type:'commonjs'}))\"",
+    "electron:dev": "npm run electron:ts && concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "electron:build": "npm run build && npm run electron:ts && electron-builder --win"
+  },
+  "build": {
+    "appId": "com.southernspoon.pos",
+    "productName": "Southern Spoon POS",
+    "copyright": "Copyright © 2026 Southern Spoon Galle",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "public/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "public/logo.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Southern Spoon POS"
+    }
   },
   "dependencies": {
     "clsx": "^2.1.1",

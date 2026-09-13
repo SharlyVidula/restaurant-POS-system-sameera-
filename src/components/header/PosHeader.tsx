@@ -11,9 +11,12 @@ import {
   Sparkles,
   ShoppingBag,
   Bike,
-  UtensilsCrossed
+  UtensilsCrossed,
+  GitBranch
 } from 'lucide-react';
 import { OrderType } from '../../types';
+import { GitUpdateModal } from '../modals/GitUpdateModal';
+import southernSpoonLogo from '../../assets/logo.png';
 
 export const PosHeader: React.FC = () => {
   const {
@@ -33,6 +36,7 @@ export const PosHeader: React.FC = () => {
 
   const [time, setTime] = useState<string>('');
   const [date, setDate] = useState<string>('');
+  const [isGitModalOpen, setIsGitModalOpen] = useState(false);
 
   useEffect(() => {
     const updateClock = () => {
@@ -52,28 +56,34 @@ export const PosHeader: React.FC = () => {
   ];
 
   return (
-    <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-2.5 flex items-center justify-between shadow-lg sticky top-0 z-30 select-none">
-      {/* Restaurant Brand & Branch */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-900/30 text-white font-bold text-lg tracking-wider border border-amber-400/30">
-          GF
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-bold text-sm lg:text-base tracking-wide text-amber-400 flex items-center gap-1.5">
-              {restaurant.name}
-            </h1>
-            <span className="bg-amber-950/80 text-amber-400 text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full border border-amber-700/50">
-              {restaurant.branch}
-            </span>
+    <>
+      <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-2 flex items-center justify-between shadow-lg sticky top-0 z-30 select-none">
+        {/* Restaurant Brand & Branch */}
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-slate-950 flex items-center justify-center shadow-lg shadow-amber-950/40 border border-amber-500/40 p-0.5 relative group overflow-hidden shrink-0">
+            <img 
+              src={southernSpoonLogo} 
+              alt="Southern Spoon" 
+              className="w-full h-full object-cover rounded-lg"
+            />
+            <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-amber-400/20 pointer-events-none" />
           </div>
-          <p className="text-xs text-slate-400 flex items-center gap-2">
-            <span>Offline POS Engine</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-            <span className="text-emerald-400 font-medium text-[11px]">SQLite Synced</span>
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="font-extrabold text-sm lg:text-base tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-amber-200">
+                {restaurant.name}
+              </h1>
+              <span className="bg-amber-950/90 text-amber-300 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border border-amber-700/60">
+                {restaurant.branch}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+              <span className="font-medium text-amber-500/90">Authentic Sri Lankan Cuisine</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+              <span className="text-emerald-400 font-mono text-[10px]">Offline POS</span>
+            </p>
+          </div>
         </div>
-      </div>
 
       {/* Order Mode Switcher */}
       <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shadow-inner">
@@ -161,6 +171,16 @@ export const PosHeader: React.FC = () => {
           <span>Z-Report</span>
         </button>
 
+        {/* Git Update Sync */}
+        <button
+          onClick={() => setIsGitModalOpen(true)}
+          title="Check GitHub for Updates"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:text-amber-300 transition-all"
+        >
+          <GitBranch className="w-3.5 h-3.5 text-orange-400" />
+          <span className="hidden xl:inline">Sync Git</span>
+        </button>
+
         {/* Live Clock & Shift Info */}
         <div className="hidden lg:flex flex-col text-right pl-2 border-l border-slate-800">
           <div className="flex items-center justify-end gap-1.5 text-slate-200 font-mono text-xs font-bold">
@@ -175,5 +195,11 @@ export const PosHeader: React.FC = () => {
         </div>
       </div>
     </header>
+
+    <GitUpdateModal 
+      isOpen={isGitModalOpen} 
+      onClose={() => setIsGitModalOpen(false)} 
+    />
+  </>
   );
 };

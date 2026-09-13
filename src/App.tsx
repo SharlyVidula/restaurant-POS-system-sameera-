@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePosStore } from './store/posStore';
 import { PosHeader } from './components/header/PosHeader';
 import { CategoryTabs } from './components/menu/CategoryTabs';
@@ -11,15 +11,24 @@ import { PrintPreviewModal } from './components/modals/PrintPreviewModal';
 import { XReportModal } from './components/modals/XReportModal';
 import { ZReportModal } from './components/modals/ZReportModal';
 import { HistoryModal } from './components/modals/HistoryModal';
+import { SplashScreen } from './components/common/SplashScreen';
 import { Sparkles, Utensils } from 'lucide-react';
 
 export const App: React.FC = () => {
+  const [showSplash, setShowSplash] = useState(true);
   const { 
     init, 
     menuItems, 
     selectedCategoryId, 
     searchQuery,
-    categories 
+    categories,
+    variantModalItem,
+    isPaymentModalOpen,
+    isTableModalOpen,
+    printPreview,
+    isXReportModalOpen,
+    isZReportModalOpen,
+    isHistoryModalOpen,
   } = usePosStore();
 
   useEffect(() => {
@@ -90,14 +99,17 @@ export const App: React.FC = () => {
         </aside>
       </div>
 
+      {/* Startup Splash & Loading Screen */}
+      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+
       {/* Interactive Modals */}
-      <VariantModal />
-      <PaymentModal />
-      <TableModal />
-      <PrintPreviewModal />
-      <XReportModal />
-      <ZReportModal />
-      <HistoryModal />
+      {variantModalItem && <VariantModal />}
+      {isPaymentModalOpen && <PaymentModal />}
+      {isTableModalOpen && <TableModal />}
+      {printPreview && <PrintPreviewModal />}
+      {isXReportModalOpen && <XReportModal />}
+      {isZReportModalOpen && <ZReportModal />}
+      {isHistoryModalOpen && <HistoryModal />}
     </div>
   );
 };

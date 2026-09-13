@@ -5,4 +5,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   printReceipt: (rawHex: string) => ipcRenderer.invoke('print-receipt', rawHex),
   kickCashDrawer: () => ipcRenderer.invoke('kick-cash-drawer'),
   getPrinterStatus: () => ipcRenderer.invoke('get-printer-status'),
+  checkForGitUpdates: () => ipcRenderer.invoke('check-for-git-updates'),
+  pullGitUpdates: () => ipcRenderer.invoke('pull-git-updates'),
 });

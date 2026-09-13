@@ -20,8 +20,8 @@ import {
 } from '../data/seedData';
 
 const STORAGE_KEYS = {
-  CATEGORIES: 'galle_pos_categories_v1',
-  MENU_ITEMS: 'galle_pos_menu_items_v1',
+  CATEGORIES: 'galle_pos_categories_v2',
+  MENU_ITEMS: 'galle_pos_menu_items_v2',
   TABLES: 'galle_pos_tables_v1',
   ORDERS: 'galle_pos_orders_v1',
   SHIFTS: 'galle_pos_shifts_v1',
@@ -54,17 +54,26 @@ class SQLiteLocalDatabase {
       const storedShifts = localStorage.getItem(STORAGE_KEYS.SHIFTS);
       const storedShiftId = localStorage.getItem(STORAGE_KEYS.ACTIVE_SHIFT_ID);
 
-      if (storedCategories && storedMenuItems && storedTables) {
+      if (storedCategories && storedMenuItems) {
         this.categories = JSON.parse(storedCategories);
         this.menuItems = JSON.parse(storedMenuItems);
-        this.tables = JSON.parse(storedTables);
-        this.orders = storedOrders ? JSON.parse(storedOrders) : [];
-        this.shifts = storedShifts ? JSON.parse(storedShifts) : [INITIAL_SHIFT];
-        this.activeShiftId = storedShiftId ? parseInt(storedShiftId, 10) : 101;
       } else {
-        // Seed default database
-        this.resetToSeedData();
+        this.categories = [...INITIAL_CATEGORIES];
+        this.menuItems = [...INITIAL_MENU_ITEMS];
+        localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(this.categories));
+        localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(this.menuItems));
       }
+
+      if (storedTables) {
+        this.tables = JSON.parse(storedTables);
+      } else {
+        this.tables = [...INITIAL_TABLES];
+        localStorage.setItem(STORAGE_KEYS.TABLES, JSON.stringify(this.tables));
+      }
+
+      this.orders = storedOrders ? JSON.parse(storedOrders) : [];
+      this.shifts = storedShifts ? JSON.parse(storedShifts) : [{ ...INITIAL_SHIFT }];
+      this.activeShiftId = storedShiftId ? parseInt(storedShiftId, 10) : INITIAL_SHIFT.id;
     } catch (e) {
       console.warn("Falling back to fresh database seed", e);
       this.resetToSeedData();

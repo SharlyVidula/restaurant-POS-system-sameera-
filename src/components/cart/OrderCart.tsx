@@ -45,6 +45,7 @@ export const OrderCart: React.FC = () => {
     fireKOT,
     openPaymentModal,
     openTableModal,
+    printBillPreview,
   } = usePosStore();
 
   const [showCustomerDetails, setShowCustomerDetails] = useState(false);
@@ -350,25 +351,44 @@ export const OrderCart: React.FC = () => {
       </div>
 
       {/* Action Footer Buttons */}
-      <div className="p-3 bg-slate-950 border-t border-slate-800 grid grid-cols-2 gap-2">
-        {/* Fire KOT Button */}
-        <button
-          onClick={fireKOT}
-          disabled={cart.length === 0}
-          className="flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 font-bold text-xs border border-slate-700 transition-all shadow-md active:scale-95"
-        >
-          <Send className="w-4 h-4 text-orange-400" />
-          <span>Fire KOT (Kitchen)</span>
-        </button>
+      <div className="p-3 bg-slate-950 border-t border-slate-800 space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          {/* Fire KOT Button */}
+          <button
+            onClick={fireKOT}
+            disabled={cart.length === 0}
+            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 font-bold text-xs border border-slate-700 transition-all shadow-md active:scale-95"
+          >
+            <Send className="w-3.5 h-3.5 text-orange-400" />
+            <span>Fire KOT (Kitchen)</span>
+          </button>
+
+          {/* Print Guest Bill Button */}
+          <button
+            onClick={printBillPreview}
+            disabled={cart.length === 0}
+            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 font-bold text-xs border border-slate-700 transition-all shadow-md active:scale-95"
+          >
+            <Receipt className="w-3.5 h-3.5 text-amber-400" />
+            <span>Print Bill (Check)</span>
+          </button>
+        </div>
 
         {/* Settle Bill Button */}
         <button
-          onClick={openPaymentModal}
-          disabled={cart.length === 0 || (orderType === 'dine_in' && !selectedTable)}
-          className="flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black text-sm shadow-glow-amber transition-all active:scale-95 border border-amber-400/50"
+          onClick={() => {
+            if (cart.length === 0) return;
+            if (orderType === 'dine_in' && !selectedTable) {
+              openTableModal();
+              return;
+            }
+            openPaymentModal();
+          }}
+          disabled={cart.length === 0}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black text-sm shadow-glow-amber transition-all active:scale-95 border border-amber-400/50"
         >
           <CreditCard className="w-4 h-4" />
-          <span>Settle / Pay</span>
+          <span>{orderType === 'dine_in' && !selectedTable ? 'Table & Pay' : 'Settle / Pay'}</span>
         </button>
       </div>
     </div>

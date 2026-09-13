@@ -8,6 +8,7 @@ import {
   CartItemModifier, 
   OrderType, 
   Order, 
+  OrderItem,
   ShiftSession, 
   XReportData, 
   ZReportData, 
@@ -16,14 +17,26 @@ import {
 } from '../types';
 import { posDatabase } from '../db/sqlite';
 import { RESTAURANT_PROFILE } from '../data/seedData';
-import { buildCustomerReceiptEscPos, buildKotEscPos, buildDrawerKickEscPos, buildXReportEscPos, buildZReportEscPos } from '../utils/escpos';
+import { buildCustomerReceiptEscPos, buildKotEscPos, buildDrawerKickEscPos, buildXReportEscPos, buildZReportEscPos, buildBillEscPos } from '../utils/escpos';
 
 export interface PrintPreviewData {
   title: string;
-  type: 'RECEIPT' | 'KOT' | 'X_REPORT' | 'Z_REPORT';
+  type: 'RECEIPT' | 'KOT' | 'BILL' | 'X_REPORT' | 'Z_REPORT';
   plainText: string;
   hexDump: string;
   width: 80 | 58;
+  order?: Order;
+  kotData?: {
+    orderNumber: string;
+    orderType: string;
+    tableNumber?: string;
+    items: (OrderItem | CartItem | { item_name: string; variant_name?: string; quantity: number; notes?: string; station?: string; unit_price?: number; total_price?: number })[];
+    cashierName: string;
+    notes?: string;
+    createdAt?: string;
+  };
+  xReportData?: XReportData;
+  zReportData?: ZReportData;
 }
 
 interface PosState {
@@ -116,6 +129,7 @@ interface PosState {
   closeZReport: () => void;
   closePrintPreview: () => void;
   setPrintPreview: (data: PrintPreviewData | null) => void;
+  printBillPreview: () => void;
   performZClosure: (countedCash: number, cashier: string, notes?: string) => ZReportData;
   loadOrderIntoCart: (order: Order) => void;
 }
@@ -363,6 +377,25 @@ export const usePosStore = create<PosState>((set, get) => ({
         plainText: `KOT #${dummyOrderNum} Dispatched to Wok & Kitchen stations`,
         hexDump: kotBuilder.getHexDump(),
         width: 80,
+        kotData: {
+          orderNumber: dummyOrderNum,
+          orderType: state.orderType,
+          tableNumber: state.selectedTable?.table_number,
+          items: state.cart.map(c => ({
+            menu_item_id: c.menu_item_id,
+            variant_id: c.variant_id,
+            item_name: c.item_name,
+            variant_name: c.variant_name,
+            quantity: c.quantity,
+            notes: c.notes,
+            station: c.station,
+            unit_price: c.unit_price,
+            total_price: c.total_price,
+          })),
+          cashierName: state.activeShift.cashier_name,
+          notes: state.orderNotes,
+          createdAt: new Date().toLocaleTimeString(),
+        }
       }
     });
   },
@@ -449,6 +482,7 @@ export const usePosStore = create<PosState>((set, get) => ({
         plainText: `Receipt for #${savedOrder.order_number} (LKR ${savedOrder.total_amount.toLocaleString()})`,
         hexDump: receiptBuilder.getHexDump(),
         width: 80,
+        order: savedOrder,
       }
     });
 
@@ -484,6 +518,58 @@ export const usePosStore = create<PosState>((set, get) => ({
   closePrintPreview: () => set({ printPreview: null }),
   setPrintPreview: (preview) => set({ printPreview: preview }),
 
+  printBillPreview: () => {
+    const state = get();
+    if (state.cart.length === 0) return;
+
+    const dummyOrderNum = `BILL-${Math.floor(1000 + Math.random() * 9000)}`;
+    const billOrder: Order = {
+      id: 0,
+      order_number: dummyOrderNum,
+      order_type: state.orderType,
+      table_id: state.selectedTable?.id,
+      table_number: state.selectedTable?.table_number,
+      subtotal: state.getSubtotal(),
+      discount_amount: state.getDiscountTotal(),
+      discount_percentage: state.discountPercentage,
+      tax_amount: state.getTaxTotal(),
+      service_charge: state.getServiceChargeTotal(),
+      total_amount: state.getNetTotal(),
+      payment_status: 'unpaid',
+      created_at: new Date().toLocaleTimeString(),
+      cashier_name: state.activeShift.cashier_name,
+      shift_id: state.activeShift.id,
+      customer_name: state.customerName,
+      customer_phone: state.customerPhone,
+      notes: state.orderNotes,
+      items: state.cart.map((c, idx) => ({
+        id: idx + 1,
+        menu_item_id: c.menu_item_id,
+        variant_id: c.variant_id,
+        item_name: c.item_name,
+        variant_name: c.variant_name,
+        quantity: c.quantity,
+        unit_price: c.unit_price,
+        total_price: c.total_price,
+        notes: c.notes,
+        station: c.station,
+      })),
+    };
+
+    const billBuilder = buildBillEscPos(billOrder, state.restaurant, 80);
+
+    set({
+      printPreview: {
+        title: `Guest Check / Bill - ${state.selectedTable ? state.selectedTable.table_number : 'Takeaway'}`,
+        type: 'BILL',
+        plainText: `Guest Bill for ${state.selectedTable ? state.selectedTable.table_number : 'Takeaway'} (LKR ${billOrder.total_amount.toLocaleString()})`,
+        hexDump: billBuilder.getHexDump(),
+        width: 80,
+        order: billOrder,
+      }
+    });
+  },
+
   performZClosure: (countedCash: number, cashier: string, notes?: string) => {
     const zReport = posDatabase.closeShiftZReport(countedCash, cashier, notes);
     const zBuilder = buildZReportEscPos(zReport, get().restaurant);
@@ -497,6 +583,7 @@ export const usePosStore = create<PosState>((set, get) => ({
         plainText: `Official End of Day Z-Report generated for ${cashier}`,
         hexDump: zBuilder.getHexDump(),
         width: 80,
+        zReportData: zReport,
       }
     });
 
