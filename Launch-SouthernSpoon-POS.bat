@@ -45,8 +45,15 @@ if exist "release\Southern Spoon POS.exe" (
     exit /b 0
 )
 
-:: Step 3: Launch via local Electron
-echo [*] Starting POS via Electron engine...
+:: Step 3: Launch via local Electron executable
+if exist "node_modules\.bin\electron.cmd" (
+    echo [*] Starting POS via local Electron engine...
+    call "node_modules\.bin\electron.cmd" .
+    if %errorlevel% equ 0 exit /b 0
+)
+
+:: Step 4: Fallback to npx electron
+echo [*] Starting POS via npx electron...
 call npx electron .
 if %errorlevel% neq 0 (
     echo.
