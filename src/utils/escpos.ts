@@ -127,6 +127,10 @@ export class EscPosBuilder {
   kickCashDrawer(): this {
     // ESC p 0 25 250 (Pin 2 standard RJ11 24V cash drawer kick pulse)
     this.buffer.push(ESC, 0x70, 0x00, 0x19, 0xFA);
+    // ESC p 1 25 250 (Pin 5 alternate RJ11 cash drawer kick pulse)
+    this.buffer.push(ESC, 0x70, 0x01, 0x19, 0xFA);
+    // DLE DC4 realtime kick pulse
+    this.buffer.push(0x10, 0x14, 0x01, 0x00, 0x05);
     return this;
   }
 
