@@ -69,8 +69,12 @@ export const PrintPreviewModal: React.FC = () => {
 
   const handlePrint = () => {
     setPrintSuccessNotice(true);
-    // Invoke browser/system print dialog formatted for thermal receipt
-    window.print();
+    // Direct commercial POS silent print (bypasses print options modal)
+    if (typeof (window as any).electronAPI?.silentPrint === 'function') {
+      (window as any).electronAPI.silentPrint();
+    } else {
+      window.print();
+    }
     setTimeout(() => setPrintSuccessNotice(false), 3000);
   };
 

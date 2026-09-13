@@ -6,6 +6,10 @@ import util from 'util';
 const execPromise = util.promisify(exec);
 let mainWindow: BrowserWindow | null = null;
 
+// Enable commercial POS kiosk silent printing (bypasses Windows print dialog)
+app.commandLine.appendSwitch('kiosk-printing');
+app.commandLine.appendSwitch('disable-print-preview');
+
 function createWindow() {
   const iconPath = path.join(__dirname, '../public/logo.ico');
 
@@ -55,6 +59,21 @@ app.whenReady().then(() => {
   ipcMain.handle('print-receipt', async (_event, _rawHex) => {
     console.log('[ESC/POS Hardware] Receipt dispatch command received');
     return { success: true, message: 'Printed to thermal printer' };
+  });
+
+  // Direct silent printing bypassing prompt
+  ipcMain.handle('silent-print', async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      win.webContents.print({
+        silent: true,
+        printBackground: true,
+      }, (success, failureReason) => {
+        if (!success) console.error('[Silent Print Error]', failureReason);
+      });
+      return { success: true };
+    }
+    return { success: false };
   });
 
   ipcMain.handle('kick-cash-drawer', async () => {
