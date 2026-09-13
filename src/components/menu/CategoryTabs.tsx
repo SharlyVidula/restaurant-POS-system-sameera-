@@ -23,20 +23,26 @@ export const CategoryTabs: React.FC = () => {
 
   const getCategoryIcon = (name: string) => {
     switch (name) {
+      case 'Rice':
       case 'Rice & Curry':
-        return <Soup className="w-4 h-4" />;
-      case 'Fried Rice':
-        return <Flame className="w-4 h-4" />;
+        return <Flame className="w-3.5 h-3.5 text-amber-400" />;
+      case 'Kottu':
       case 'Kottu Station':
-        return <UtensilsCrossed className="w-4 h-4" />;
-      case 'Short Eats & Breads':
-        return <Cookie className="w-4 h-4" />;
+        return <UtensilsCrossed className="w-3.5 h-3.5 text-red-400" />;
+      case 'Noodles':
+        return <Soup className="w-3.5 h-3.5 text-orange-400" />;
+      case 'Devilled (200g)':
+      case 'Devilled':
+        return <Flame className="w-3.5 h-3.5 text-rose-400" />;
+      case 'Chopsy':
+        return <Soup className="w-3.5 h-3.5 text-yellow-400" />;
+      case 'Fruit Juice':
       case 'Fresh Juices':
-        return <GlassWater className="w-4 h-4" />;
-      case 'Soft Drinks':
-        return <CupSoda className="w-4 h-4" />;
+        return <GlassWater className="w-3.5 h-3.5 text-emerald-400" />;
+      case 'Desserts':
+        return <Cookie className="w-3.5 h-3.5 text-blue-400" />;
       default:
-        return <LayoutGrid className="w-4 h-4" />;
+        return <LayoutGrid className="w-3.5 h-3.5" />;
     }
   };
 

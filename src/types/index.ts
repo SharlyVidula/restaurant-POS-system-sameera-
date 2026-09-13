@@ -35,7 +35,7 @@ export interface MenuItem {
   variants?: ItemVariant[];
   has_stepper?: boolean; // For short-eats +1, +2, +5
   default_notes?: string[];
-  station?: 'Wok Station' | 'Curry Counter' | 'Short Eats' | 'Beverage Bar' | 'Kitchen';
+  station?: 'Wok Station' | 'Curry Counter' | 'Short Eats' | 'Beverage Bar' | 'Kitchen' | 'Kottu Griddle' | 'Juice Bar' | 'Dessert Bar';
   badge?: string;
 }
 
