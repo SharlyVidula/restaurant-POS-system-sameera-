@@ -2,10 +2,14 @@
 title Southern Spoon POS - Terminal Launcher
 color 0E
 
+:: Ensure working directory is the script folder
+cd /d "%~dp0"
+
 echo ============================================================
 echo           SOUTHERN SPOON RESTAURANT POS TERMINAL
 echo          Authentic Sri Lankan Cuisine - Galle Fort
 echo ============================================================
+echo Current directory: %CD%
 echo.
 
 :: Step 1: Check for GitHub repository updates
@@ -30,14 +34,25 @@ echo.
 
 :: Step 2: Check if standalone compiled executable exists in release folder
 if exist "release\win-unpacked\Southern Spoon POS.exe" (
+    echo [*] Starting compiled standalone binary...
     start "" "release\win-unpacked\Southern Spoon POS.exe"
-    exit
+    exit /b 0
 )
 
 if exist "release\Southern Spoon POS.exe" (
+    echo [*] Starting release binary...
     start "" "release\Southern Spoon POS.exe"
-    exit
+    exit /b 0
 )
 
-:: Fallback: Start Electron terminal directly
-npx electron .
+:: Step 3: Launch via local Electron
+echo [*] Starting POS via Electron engine...
+call npx electron .
+if %errorlevel% neq 0 (
+    echo.
+    echo ============================================================
+    echo [ERROR] Electron encountered an issue starting up.
+    echo Press any key to see options...
+    echo ============================================================
+    pause
+)
