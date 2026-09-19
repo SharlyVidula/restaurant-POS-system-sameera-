@@ -164,15 +164,20 @@ export function buildCustomerReceiptEscPos(
     .doubleSize(true)
     .text(restaurant.name)
     .newLine()
-    .doubleSize(false)
-    .text(restaurant.branch)
-    .newLine()
-    .bold(false)
+    .doubleSize(false);
+
+  if (restaurant.branch && 
+      restaurant.branch.toLowerCase().trim() !== restaurant.address.toLowerCase().trim() &&
+      !restaurant.address.toLowerCase().includes(restaurant.branch.toLowerCase().trim())) {
+    printer.text(restaurant.branch).newLine();
+  }
+
+  printer.bold(false)
     .text(restaurant.address)
     .newLine()
     .text(restaurant.city)
     .newLine()
-    .text(`Tel: ${restaurant.hotline}`)
+    .text(`Hotline: ${restaurant.hotline}`)
     .newLine()
     .text(restaurant.tax_number)
     .newLine()
@@ -288,10 +293,15 @@ export function buildBillEscPos(
     .doubleSize(true)
     .text(restaurant.name)
     .newLine()
-    .doubleSize(false)
-    .text(restaurant.branch)
-    .newLine()
-    .bold(true)
+    .doubleSize(false);
+
+  if (restaurant.branch && 
+      restaurant.branch.toLowerCase().trim() !== restaurant.address.toLowerCase().trim() &&
+      !restaurant.address.toLowerCase().includes(restaurant.branch.toLowerCase().trim())) {
+    printer.text(restaurant.branch).newLine();
+  }
+
+  printer.bold(true)
     .text("=== GUEST CHECK / PROFORMA BILL ===")
     .newLine()
     .bold(false)

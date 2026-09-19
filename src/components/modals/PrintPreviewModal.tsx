@@ -13,6 +13,7 @@ import {
   ClipboardList
 } from 'lucide-react';
 import { buildCustomerReceiptEscPos, buildKotEscPos, buildBillEscPos } from '../../utils/escpos';
+import southernSpoonLogo from '../../assets/logo.png';
 
 export const PrintPreviewModal: React.FC = () => {
   const { printPreview, closePrintPreview, restaurant } = usePosStore();
@@ -233,16 +234,27 @@ export const PrintPreviewModal: React.FC = () => {
               {currentSlipType === 'RECEIPT' && order ? (
                 /* --- DYNAMIC CUSTOMER RECEIPT --- */
                 <div>
-                  <div className="text-center space-y-0.5 pb-2">
+                  <div className="text-center space-y-0.5 pb-2 flex flex-col items-center">
+                    <div className="mb-1 flex justify-center">
+                      <img 
+                        src={southernSpoonLogo} 
+                        alt={restaurant.name} 
+                        className="w-20 h-20 object-contain mx-auto mix-blend-multiply"
+                      />
+                    </div>
                     <div className="font-extrabold text-sm tracking-wider uppercase">
                       {restaurant.name}
                     </div>
-                    <div className="font-bold text-xs">{restaurant.branch}</div>
+                    {restaurant.branch && 
+                     restaurant.branch.toLowerCase().trim() !== restaurant.address.toLowerCase().trim() && 
+                     !restaurant.address.toLowerCase().includes(restaurant.branch.toLowerCase().trim()) && (
+                      <div className="font-bold text-xs">{restaurant.branch}</div>
+                    )}
                     <div className="text-[10px] text-gray-700">{restaurant.address}</div>
                     <div className="text-[10px] text-gray-700">{restaurant.city}</div>
                     <div className="text-[10px] text-gray-700">Hotline: {restaurant.hotline}</div>
                     <div className="text-[10px] font-semibold">{restaurant.tax_number}</div>
-                    <div className="border-b-2 border-dashed border-gray-900 my-2" />
+                    <div className="border-b-2 border-dashed border-gray-900 my-2 w-full" />
                   </div>
 
                   <div className="space-y-1 text-[10px]">
@@ -418,18 +430,31 @@ export const PrintPreviewModal: React.FC = () => {
               ) : currentSlipType === 'BILL' && order ? (
                 /* --- DYNAMIC GUEST CHECK / BILL --- */
                 <div>
-                  <div className="text-center space-y-0.5 pb-2">
+                  <div className="text-center space-y-0.5 pb-2 flex flex-col items-center">
+                    <div className="mb-1 flex justify-center">
+                      <img 
+                        src={southernSpoonLogo} 
+                        alt={restaurant.name} 
+                        className="w-20 h-20 object-contain mx-auto mix-blend-multiply"
+                      />
+                    </div>
                     <div className="font-extrabold text-sm tracking-wider uppercase">
                       {restaurant.name}
                     </div>
-                    <div className="font-bold text-xs">{restaurant.branch}</div>
+                    {restaurant.branch && 
+                     restaurant.branch.toLowerCase().trim() !== restaurant.address.toLowerCase().trim() && 
+                     !restaurant.address.toLowerCase().includes(restaurant.branch.toLowerCase().trim()) && (
+                      <div className="font-bold text-xs">{restaurant.branch}</div>
+                    )}
+                    <div className="text-[10px] text-gray-700">{restaurant.address}</div>
+                    <div className="text-[10px] text-gray-700">{restaurant.city}</div>
                     <div className="text-[10px] font-extrabold text-black uppercase mt-1">
                       === GUEST CHECK / PROFORMA BILL ===
                     </div>
                     <div className="text-[9px] text-gray-600 font-semibold">
                       *** NOT A TAX RECEIPT - PENDING SETTLEMENT ***
                     </div>
-                    <div className="border-b-2 border-dashed border-gray-900 my-2" />
+                    <div className="border-b-2 border-dashed border-gray-900 my-2 w-full" />
                   </div>
 
                   <div className="space-y-1 text-[10px]">
@@ -595,10 +620,19 @@ export const PrintPreviewModal: React.FC = () => {
                 </div>
               ) : (
                 /* Generic Clean Fallback */
-                <div className="py-4 text-center space-y-2">
+                <div className="py-4 text-center space-y-2 flex flex-col items-center">
+                  <img 
+                    src={southernSpoonLogo} 
+                    alt={restaurant.name} 
+                    className="w-16 h-16 object-contain mx-auto mix-blend-multiply mb-1"
+                  />
                   <div className="font-bold text-sm uppercase">{restaurant.name}</div>
-                  <div className="text-xs text-gray-600">{restaurant.branch}</div>
-                  <div className="border-b border-dashed border-gray-800 my-2" />
+                  {restaurant.branch && 
+                   restaurant.branch.toLowerCase().trim() !== restaurant.address.toLowerCase().trim() && 
+                   !restaurant.address.toLowerCase().includes(restaurant.branch.toLowerCase().trim()) && (
+                    <div className="text-xs text-gray-600">{restaurant.branch}</div>
+                  )}
+                  <div className="border-b border-dashed border-gray-800 my-2 w-full" />
                   <div className="text-xs font-semibold">{printPreview.title}</div>
                   <p className="text-[10px] text-gray-700 whitespace-pre-wrap">{printPreview.plainText}</p>
                 </div>

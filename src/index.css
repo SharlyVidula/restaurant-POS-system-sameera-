@@ -73,4 +73,14 @@
   #thermal-printable-slip .tear-effect {
     display: none !important;
   }
+  #thermal-printable-slip img {
+    filter: grayscale(100%) contrast(140%) !important;
+    mix-blend-mode: multiply !important;
+    display: block !important;
+    margin: 0 auto 6px auto !important;
+    max-width: 48mm !important;
+    height: auto !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }
