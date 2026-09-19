@@ -9,7 +9,9 @@ import {
   XReportData, 
   ZReportData, 
   TableStatus, 
-  PaymentMethod 
+  PaymentMethod,
+  CashTransaction,
+  PriceChangeAudit
 } from '../types';
 import { 
   INITIAL_CATEGORIES, 
@@ -27,6 +29,9 @@ const STORAGE_KEYS = {
   SHIFTS: 'galle_pos_shifts_v1',
   DRAWER_LOGS: 'galle_pos_drawer_logs_v1',
   ACTIVE_SHIFT_ID: 'galle_pos_active_shift_id_v1',
+  CASH_TXNS: 'galle_pos_cash_txns_v1',
+  PRICE_AUDITS: 'galle_pos_price_audits_v1',
+  ADMIN_PIN: 'galle_pos_admin_pin_v1',
 };
 
 class SQLiteLocalDatabase {
@@ -36,6 +41,9 @@ class SQLiteLocalDatabase {
   private orders: Order[] = [];
   private shifts: ShiftSession[] = [];
   private drawerLogs: Array<{ id: number; timestamp: string; reason: string; cashier: string }> = [];
+  private cashTransactions: CashTransaction[] = [];
+  private priceAudits: PriceChangeAudit[] = [];
+  private adminPin: string = '7788';
   private activeShiftId: number = 101;
   private isInitialized = false;
 
@@ -74,6 +82,15 @@ class SQLiteLocalDatabase {
       this.orders = storedOrders ? JSON.parse(storedOrders) : [];
       this.shifts = storedShifts ? JSON.parse(storedShifts) : [{ ...INITIAL_SHIFT }];
       this.activeShiftId = storedShiftId ? parseInt(storedShiftId, 10) : INITIAL_SHIFT.id;
+
+      const storedCashTxns = localStorage.getItem(STORAGE_KEYS.CASH_TXNS);
+      this.cashTransactions = storedCashTxns ? JSON.parse(storedCashTxns) : [];
+
+      const storedPriceAudits = localStorage.getItem(STORAGE_KEYS.PRICE_AUDITS);
+      this.priceAudits = storedPriceAudits ? JSON.parse(storedPriceAudits) : [];
+
+      const storedAdminPin = localStorage.getItem(STORAGE_KEYS.ADMIN_PIN);
+      if (storedAdminPin) this.adminPin = storedAdminPin;
     } catch (e) {
       console.warn("Falling back to fresh database seed", e);
       this.resetToSeedData();
@@ -89,6 +106,9 @@ class SQLiteLocalDatabase {
     this.orders = [];
     this.shifts = [{ ...INITIAL_SHIFT }];
     this.activeShiftId = INITIAL_SHIFT.id;
+    this.cashTransactions = [];
+    this.priceAudits = [];
+    this.adminPin = '7788';
     this.persistAll();
   }
 
@@ -101,6 +121,9 @@ class SQLiteLocalDatabase {
       localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(this.shifts));
       localStorage.setItem(STORAGE_KEYS.ACTIVE_SHIFT_ID, this.activeShiftId.toString());
       localStorage.setItem(STORAGE_KEYS.DRAWER_LOGS, JSON.stringify(this.drawerLogs));
+      localStorage.setItem(STORAGE_KEYS.CASH_TXNS, JSON.stringify(this.cashTransactions));
+      localStorage.setItem(STORAGE_KEYS.PRICE_AUDITS, JSON.stringify(this.priceAudits));
+      localStorage.setItem(STORAGE_KEYS.ADMIN_PIN, this.adminPin);
     } catch (e) {
       console.error("Database persistence error", e);
     }
@@ -123,6 +146,46 @@ class SQLiteLocalDatabase {
       return item.is_available;
     }
     return false;
+  }
+
+  public updateMenuItemPrice(
+    itemId: number, 
+    newBasePrice: number, 
+    variantUpdates?: { id: number; price_adjustment: number }[],
+    changedBy: string = 'Admin'
+  ): boolean {
+    const item = this.menuItems.find(m => m.id === itemId);
+    if (item) {
+      const oldPrice = item.base_price;
+      item.base_price = newBasePrice;
+      
+      if (variantUpdates && item.variants) {
+        variantUpdates.forEach(vu => {
+          const v = item.variants?.find(variant => variant.id === vu.id);
+          if (v) {
+            v.price_adjustment = vu.price_adjustment;
+          }
+        });
+      }
+
+      this.priceAudits.unshift({
+        id: Date.now(),
+        item_id: item.id,
+        item_name: item.name,
+        old_price: oldPrice,
+        new_price: newBasePrice,
+        timestamp: new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString(),
+        changed_by: changedBy,
+      });
+
+      this.persistAll();
+      return true;
+    }
+    return false;
+  }
+
+  public getPriceAudits(): PriceChangeAudit[] {
+    return [...this.priceAudits];
   }
 
   // --- TABLES ---
@@ -244,7 +307,7 @@ class SQLiteLocalDatabase {
     return true;
   }
 
-  // --- CASH DRAWER LOGS ---
+  // --- CASH DRAWER LOGS & TRANSACTIONS ---
   public logDrawerKick(reason: string, cashier: string = 'Kasun Perera'): void {
     this.drawerLogs.push({
       id: Date.now(),
@@ -257,6 +320,64 @@ class SQLiteLocalDatabase {
 
   public getDrawerLogs() {
     return [...this.drawerLogs];
+  }
+
+  public recordCashTransaction(data: Omit<CashTransaction, 'id' | 'timestamp'>): CashTransaction {
+    const txn: CashTransaction = {
+      ...data,
+      id: Date.now(),
+      timestamp: new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString(),
+    };
+
+    this.cashTransactions.unshift(txn);
+
+    // Also log in hardware drawer logs for audit
+    this.drawerLogs.push({
+      id: txn.id,
+      timestamp: txn.timestamp,
+      reason: `[${txn.type.toUpperCase()}] Rs. ${txn.amount} to ${txn.recipient}: ${txn.reason} (Auth: ${txn.authorized_by})`,
+      cashier: txn.cashier_name,
+    });
+
+    // Update expected cash drawer balance
+    const shift = this.shifts.find(s => s.id === this.activeShiftId);
+    if (shift) {
+      if (txn.type === 'lending' || txn.type === 'expense' || txn.type === 'drop') {
+        shift.cash_drawer_expected -= txn.amount;
+        shift.total_payouts = (shift.total_payouts || 0) + txn.amount;
+      } else if (txn.type === 'float_in') {
+        shift.cash_drawer_expected += txn.amount;
+        shift.total_cash_in = (shift.total_cash_in || 0) + txn.amount;
+      }
+    }
+
+    this.persistAll();
+    return txn;
+  }
+
+  public getCashTransactions(shiftId?: number): CashTransaction[] {
+    if (shiftId) {
+      return this.cashTransactions.filter(t => t.shift_id === shiftId);
+    }
+    return [...this.cashTransactions];
+  }
+
+  // --- ADMIN SECURITY & AUTH ---
+  public getAdminPin(): string {
+    return this.adminPin;
+  }
+
+  public verifyAdminPin(pin: string): boolean {
+    return pin === this.adminPin;
+  }
+
+  public updateAdminPin(newPin: string): boolean {
+    if (newPin && newPin.length >= 4) {
+      this.adminPin = newPin;
+      this.persistAll();
+      return true;
+    }
+    return false;
   }
 
   // --- SHIFTS & REPORTS ---
@@ -309,6 +430,10 @@ class SQLiteLocalDatabase {
     ];
 
     const discountTotal = shiftOrders.reduce((acc, o) => acc + o.discount_amount, 0);
+    const currentShiftTxns = this.getCashTransactions(shift.id);
+    const totalPayouts = currentShiftTxns
+      .filter(t => t.type === 'lending' || t.type === 'expense' || t.type === 'drop')
+      .reduce((sum, t) => sum + t.amount, 0);
 
     return {
       shift,
@@ -319,6 +444,8 @@ class SQLiteLocalDatabase {
       discount_total: discountTotal,
       void_total: shift.void_count,
       generated_at: new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString(),
+      cash_payouts: currentShiftTxns,
+      total_payouts: totalPayouts,
     };
   }
 
@@ -357,6 +484,8 @@ class SQLiteLocalDatabase {
       total_discounts: 0,
       void_count: 0,
       cash_drawer_expected: 15000.0,
+      total_payouts: 0,
+      total_cash_in: 0,
     };
 
     this.shifts.push(nextShift);

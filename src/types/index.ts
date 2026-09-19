@@ -130,7 +130,33 @@ export interface ShiftSession {
   cash_drawer_counted?: number;
   discrepancy?: number;
   notes?: string;
+  total_payouts?: number;
+  total_cash_in?: number;
 }
+
+export interface CashTransaction {
+  id: number;
+  timestamp: string;
+  type: 'lending' | 'expense' | 'drop' | 'float_in' | 'no_sale';
+  amount: number;
+  recipient: string;
+  reason: string;
+  authorized_by: string;
+  cashier_name: string;
+  shift_id: number;
+}
+
+export interface PriceChangeAudit {
+  id: number;
+  item_id: number;
+  item_name: string;
+  old_price: number;
+  new_price: number;
+  timestamp: string;
+  changed_by: string;
+}
+
+export type UserRole = 'cashier' | 'admin';
 
 export interface XReportData {
   shift: ShiftSession;
@@ -141,6 +167,8 @@ export interface XReportData {
   discount_total: number;
   void_total: number;
   generated_at: string;
+  cash_payouts?: CashTransaction[];
+  total_payouts?: number;
 }
 
 export interface ZReportData extends XReportData {

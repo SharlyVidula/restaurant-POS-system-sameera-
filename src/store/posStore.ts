@@ -13,15 +13,26 @@ import {
   XReportData, 
   ZReportData, 
   RestaurantProfile,
-  PaymentMethod 
+  PaymentMethod,
+  UserRole,
+  CashTransaction,
+  PriceChangeAudit
 } from '../types';
 import { posDatabase } from '../db/sqlite';
 import { RESTAURANT_PROFILE } from '../data/seedData';
-import { buildCustomerReceiptEscPos, buildKotEscPos, buildDrawerKickEscPos, buildXReportEscPos, buildZReportEscPos, buildBillEscPos } from '../utils/escpos';
+import { 
+  buildCustomerReceiptEscPos, 
+  buildKotEscPos, 
+  buildDrawerKickEscPos, 
+  buildXReportEscPos, 
+  buildZReportEscPos, 
+  buildBillEscPos,
+  buildPayoutVoucherEscPos
+} from '../utils/escpos';
 
 export interface PrintPreviewData {
   title: string;
-  type: 'RECEIPT' | 'KOT' | 'BILL' | 'X_REPORT' | 'Z_REPORT';
+  type: 'RECEIPT' | 'KOT' | 'BILL' | 'X_REPORT' | 'Z_REPORT' | 'PAYOUT_VOUCHER';
   plainText: string;
   hexDump: string;
   width: 80 | 58;
@@ -37,6 +48,7 @@ export interface PrintPreviewData {
   };
   xReportData?: XReportData;
   zReportData?: ZReportData;
+  payoutData?: CashTransaction;
 }
 
 interface PosState {
@@ -72,11 +84,33 @@ interface PosState {
   isXReportModalOpen: boolean;
   isZReportModalOpen: boolean;
   isDrawerLogModalOpen: boolean;
+  isCashPayoutModalOpen: boolean;
+  isMenuPriceModalOpen: boolean;
+  isAdminAuthModalOpen: boolean;
+  adminAuthTitle: string;
+  adminAuthPendingAction: (() => void) | null;
   printPreview: PrintPreviewData | null;
   drawerPulseActive: boolean;
 
+  // RBAC & Ledger Data
+  currentUserRole: UserRole;
+  cashTransactions: CashTransaction[];
+  priceAudits: PriceChangeAudit[];
+
   // Actions
   init: () => void;
+  setUserRole: (role: UserRole) => void;
+  requireAdminAuth: (title: string, onAuthorized: () => void) => void;
+  closeAdminAuthModal: () => void;
+  verifyAndExecuteAdminAuth: (pin: string) => boolean;
+  openCashPayoutModal: () => void;
+  closeCashPayoutModal: () => void;
+  submitCashPayout: (data: Omit<CashTransaction, 'id' | 'timestamp' | 'shift_id'>) => CashTransaction;
+  openMenuPriceModal: () => void;
+  closeMenuPriceModal: () => void;
+  updateMenuItemPrice: (itemId: number, newBasePrice: number, variantUpdates?: { id: number; price_adjustment: number }[]) => boolean;
+  printPayoutVoucher: (txn: CashTransaction) => void;
+
   setOrderType: (type: OrderType) => void;
   setSelectedCategory: (categoryId: number | null) => void;
   setSearchQuery: (query: string) => void;
@@ -163,8 +197,17 @@ export const usePosStore = create<PosState>((set, get) => ({
   isXReportModalOpen: false,
   isZReportModalOpen: false,
   isDrawerLogModalOpen: false,
+  isCashPayoutModalOpen: false,
+  isMenuPriceModalOpen: false,
+  isAdminAuthModalOpen: false,
+  adminAuthTitle: 'Admin Authorization Required',
+  adminAuthPendingAction: null,
   printPreview: null,
   drawerPulseActive: false,
+
+  currentUserRole: 'cashier',
+  cashTransactions: [],
+  priceAudits: [],
 
   init: () => {
     posDatabase.initDatabase();
@@ -174,6 +217,8 @@ export const usePosStore = create<PosState>((set, get) => ({
       tables: posDatabase.getTables(),
       activeShift: posDatabase.getActiveShift(),
       recentOrders: posDatabase.getOrders(),
+      cashTransactions: posDatabase.getCashTransactions(),
+      priceAudits: posDatabase.getPriceAudits(),
     });
   },
 
@@ -620,5 +665,115 @@ export const usePosStore = create<PosState>((set, get) => ({
       orderNotes: order.notes || '',
       isHistoryModalOpen: false,
     });
-  }
+  },
+
+  // --- RBAC & ADMIN SECURITY ---
+  setUserRole: (role: UserRole) => set({ currentUserRole: role }),
+
+  requireAdminAuth: (title: string, onAuthorized: () => void) => {
+    if (get().currentUserRole === 'admin') {
+      onAuthorized();
+      return;
+    }
+    set({
+      isAdminAuthModalOpen: true,
+      adminAuthTitle: title,
+      adminAuthPendingAction: onAuthorized,
+    });
+  },
+
+  closeAdminAuthModal: () => {
+    set({
+      isAdminAuthModalOpen: false,
+      adminAuthPendingAction: null,
+    });
+  },
+
+  verifyAndExecuteAdminAuth: (pin: string) => {
+    const isValid = posDatabase.verifyAdminPin(pin);
+    if (isValid) {
+      const pendingAction = get().adminAuthPendingAction;
+      set({
+        isAdminAuthModalOpen: false,
+        adminAuthPendingAction: null,
+      });
+      if (pendingAction) {
+        pendingAction();
+      }
+      return true;
+    }
+    return false;
+  },
+
+  // --- CASH DRAWER PAYOUTS & LENDING ---
+  openCashPayoutModal: () => {
+    get().requireAdminAuth('Authorize Cash Payout / Lending', () => {
+      set({ isCashPayoutModalOpen: true });
+    });
+  },
+
+  closeCashPayoutModal: () => set({ isCashPayoutModalOpen: false }),
+
+  submitCashPayout: (data: Omit<CashTransaction, 'id' | 'timestamp' | 'shift_id'>) => {
+    const shift = get().activeShift;
+    const txn = posDatabase.recordCashTransaction({
+      ...data,
+      shift_id: shift.id,
+    });
+
+    // Fire hardware solenoid pulse to release cash drawer
+    get().triggerDrawerKick(`[${txn.type.toUpperCase()}] to ${txn.recipient} - Rs. ${txn.amount}`);
+
+    set({
+      cashTransactions: posDatabase.getCashTransactions(),
+      activeShift: posDatabase.getActiveShift(),
+      isCashPayoutModalOpen: false,
+    });
+
+    // Automatically display thermal payout voucher slip
+    get().printPayoutVoucher(txn);
+
+    return txn;
+  },
+
+  printPayoutVoucher: (txn: CashTransaction) => {
+    const builder = buildPayoutVoucherEscPos(txn, get().restaurant, 80);
+    set({
+      printPreview: {
+        title: `Cash Voucher - #${txn.id.toString().slice(-6)}`,
+        type: 'PAYOUT_VOUCHER',
+        plainText: `Cash Voucher for ${txn.recipient} (LKR ${txn.amount.toLocaleString()})`,
+        hexDump: builder.getHexDump(),
+        width: 80,
+        payoutData: txn,
+      }
+    });
+  },
+
+  // --- MENU PRICE MANAGEMENT ---
+  openMenuPriceModal: () => {
+    get().requireAdminAuth('Authorize Menu Price Management', () => {
+      set({ isMenuPriceModalOpen: true });
+    });
+  },
+
+  closeMenuPriceModal: () => set({ isMenuPriceModalOpen: false }),
+
+  updateMenuItemPrice: (itemId: number, newBasePrice: number, variantUpdates?: { id: number; price_adjustment: number }[]) => {
+    const success = posDatabase.updateMenuItemPrice(
+      itemId, 
+      newBasePrice, 
+      variantUpdates, 
+      get().currentUserRole === 'admin' ? 'Admin Manager' : get().activeShift.cashier_name
+    );
+
+    if (success) {
+      set({
+        menuItems: posDatabase.getMenuItems(),
+        priceAudits: posDatabase.getPriceAudits(),
+      });
+    }
+
+    return success;
+  },
 }));

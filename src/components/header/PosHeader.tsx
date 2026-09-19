@@ -12,7 +12,9 @@ import {
   ShoppingBag,
   Bike,
   UtensilsCrossed,
-  GitBranch
+  GitBranch,
+  Tag,
+  ShieldCheck
 } from 'lucide-react';
 import { OrderType } from '../../types';
 import { GitUpdateModal } from '../modals/GitUpdateModal';
@@ -31,7 +33,12 @@ export const PosHeader: React.FC = () => {
     openHistoryModal,
     triggerDrawerKick,
     drawerPulseActive,
-    cart
+    cart,
+    currentUserRole,
+    setUserRole,
+    requireAdminAuth,
+    openCashPayoutModal,
+    openMenuPriceModal
   } = usePosStore();
 
   const [time, setTime] = useState<string>('');
@@ -126,18 +133,48 @@ export const PosHeader: React.FC = () => {
 
       {/* Quick Action Tools & Shift Controls */}
       <div className="flex items-center gap-1.5 shrink-0">
-        {/* Cash Drawer Kick Button */}
+        {/* Role Toggle Badge */}
         <button
-          onClick={() => triggerDrawerKick('Manual Cash Drawer Open')}
-          title="Kick Cash Drawer (ESC/POS 24V Pulse)"
+          onClick={() => {
+            if (currentUserRole === 'cashier') {
+              requireAdminAuth('Switch to Admin Manager Mode', () => setUserRole('admin'));
+            } else {
+              setUserRole('cashier');
+            }
+          }}
+          title={`Active Mode: ${currentUserRole.toUpperCase()} (Click to toggle)`}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+            currentUserRole === 'admin'
+              ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-glow-amber'
+              : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+          }`}
+        >
+          <ShieldCheck className={`w-3.5 h-3.5 ${currentUserRole === 'admin' ? 'text-amber-400' : 'text-slate-400'}`} />
+          <span>{currentUserRole === 'admin' ? 'ADMIN' : 'CASHIER'}</span>
+        </button>
+
+        {/* Cash Drawer Lending / Payout Button */}
+        <button
+          onClick={openCashPayoutModal}
+          title="Manual Cash Drawer Release (Admin Authorization Required)"
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
             drawerPulseActive
               ? 'bg-emerald-600 text-white border-emerald-400 scale-105 shadow-glow-emerald animate-pulse-drawer'
-              : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+              : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-amber-400'
           }`}
         >
-          <KeyRound className={`w-3.5 h-3.5 ${drawerPulseActive ? 'text-white' : 'text-emerald-400'}`} />
+          <KeyRound className={`w-3.5 h-3.5 ${drawerPulseActive ? 'text-white' : 'text-amber-400'}`} />
           <span className="hidden md:inline">Open Drawer</span>
+        </button>
+
+        {/* Menu & Item Prices (Admin) */}
+        <button
+          onClick={openMenuPriceModal}
+          title="Menu & Item Price Management"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-amber-300 border border-slate-700 hover:bg-slate-700 hover:border-amber-500/40 transition-all"
+        >
+          <Tag className="w-3.5 h-3.5 text-amber-400" />
+          <span className="hidden md:inline">Prices</span>
         </button>
 
         {/* Order History */}
@@ -160,10 +197,10 @@ export const PosHeader: React.FC = () => {
           <span>X-Report</span>
         </button>
 
-        {/* Z-Report */}
+        {/* Z-Report (Admin Protected) */}
         <button
-          onClick={openZReport}
-          title="Z-Report: End of Day Closure"
+          onClick={() => requireAdminAuth('Authorize End of Day Closure (Z-Report)', openZReport)}
+          title="Z-Report: End of Day Closure (Admin Authorized)"
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-red-900/60 to-rose-900/60 text-rose-300 border border-rose-700/50 hover:from-red-800 hover:to-rose-800 transition-all"
         >
           <FileSpreadsheet className="w-3.5 h-3.5 text-rose-400" />

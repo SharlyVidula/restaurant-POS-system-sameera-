@@ -1,4 +1,4 @@
-import { Order, OrderItem, RestaurantProfile, XReportData, ZReportData } from '../types';
+import { Order, OrderItem, RestaurantProfile, XReportData, ZReportData, CashTransaction } from '../types';
 
 export const ESC = 0x1B;
 export const GS = 0x1D;
@@ -548,6 +548,16 @@ export function buildZReportEscPos(report: ZReportData, restaurant: RestaurantPr
   printer.line();
 
   printer.twoColumn("Gross Total Sales:", `Rs. ${report.shift.total_sales.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+
+  if (report.cash_payouts && report.cash_payouts.length > 0) {
+    printer.bold(true).text("CASH PAYOUTS / LENDING:").newLine().bold(false);
+    report.cash_payouts.forEach(t => {
+      printer.twoColumn(`${t.type.toUpperCase()}: ${t.recipient}`, `- Rs. ${t.amount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+    });
+    printer.twoColumn("Total Payouts Released:", `- Rs. ${(report.total_payouts || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+    printer.line();
+  }
+
   printer.twoColumn("Expected Cash in Drawer:", `Rs. ${report.shift.cash_drawer_expected.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
   printer.twoColumn("Actual Counted Cash:", `Rs. ${report.drawer_counted.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
 
@@ -569,6 +579,60 @@ export function buildZReportEscPos(report: ZReportData, restaurant: RestaurantPr
     .text("Cashier Signature: __________________")
     .newLine()
     .text("Manager Signature: __________________")
+    .newLine()
+    .cut();
+
+  return printer;
+}
+
+/**
+ * Generate binary ESC/POS payload for Cash Payout / Lending Voucher
+ */
+export function buildPayoutVoucherEscPos(
+  txn: CashTransaction,
+  restaurant: RestaurantProfile,
+  width: 80 | 58 = 80
+): EscPosBuilder {
+  const printer = new EscPosBuilder(width);
+  printer.alignCenter()
+    .bold(true)
+    .doubleSize(true)
+    .text(restaurant.name)
+    .newLine()
+    .doubleSize(false)
+    .text(restaurant.address)
+    .newLine()
+    .bold(true)
+    .text(`=== ${txn.type.toUpperCase()} VOUCHER ===`)
+    .newLine()
+    .bold(false)
+    .doubleLine();
+
+  printer.alignLeft()
+    .twoColumn("Voucher ID:", `#CSH-${txn.id.toString().slice(-6)}`)
+    .twoColumn("Date & Time:", txn.timestamp)
+    .twoColumn("Type:", txn.type.toUpperCase())
+    .twoColumn("Authorized By:", txn.authorized_by)
+    .twoColumn("Cashier on Duty:", txn.cashier_name)
+    .line();
+
+  printer.twoColumn("Handed Over To:", txn.recipient)
+    .text(`Purpose: ${txn.reason}`)
+    .newLine()
+    .line();
+
+  printer.alignRight()
+    .bold(true).doubleHeight(true)
+    .twoColumn("AMOUNT RELEASED:", `Rs. ${txn.amount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`)
+    .doubleHeight(false).bold(false)
+    .doubleLine();
+
+  printer.alignCenter()
+    .feedLines(1)
+    .text("Recipient Signature: __________________")
+    .newLine()
+    .newLine()
+    .text("Manager Signature:   __________________")
     .newLine()
     .cut();
 

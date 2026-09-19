@@ -11,6 +11,9 @@ import { PrintPreviewModal } from './components/modals/PrintPreviewModal';
 import { XReportModal } from './components/modals/XReportModal';
 import { ZReportModal } from './components/modals/ZReportModal';
 import { HistoryModal } from './components/modals/HistoryModal';
+import { AdminAuthModal } from './components/modals/AdminAuthModal';
+import { CashPayoutModal } from './components/modals/CashPayoutModal';
+import { MenuPriceModal } from './components/modals/MenuPriceModal';
 import { SplashScreen } from './components/common/SplashScreen';
 import { Sparkles, Utensils } from 'lucide-react';
 
@@ -29,6 +32,9 @@ export const App: React.FC = () => {
     isXReportModalOpen,
     isZReportModalOpen,
     isHistoryModalOpen,
+    isAdminAuthModalOpen,
+    isCashPayoutModalOpen,
+    isMenuPriceModalOpen,
   } = usePosStore();
 
   useEffect(() => {
@@ -110,6 +116,9 @@ export const App: React.FC = () => {
       {isXReportModalOpen && <XReportModal />}
       {isZReportModalOpen && <ZReportModal />}
       {isHistoryModalOpen && <HistoryModal />}
+      {isAdminAuthModalOpen && <AdminAuthModal />}
+      {isCashPayoutModalOpen && <CashPayoutModal />}
+      {isMenuPriceModalOpen && <MenuPriceModal />}
     </div>
   );
 };

@@ -77,7 +77,8 @@ export const ZReportModal: React.FC = () => {
                 Rs. {expectedCash.toLocaleString('en-LK', { minimumFractionDigits: 2 })}
               </span>
               <span className="text-[10px] text-slate-500 block mt-1">
-                Float (Rs. {activeShift.opening_float.toLocaleString()}) + Cash Sales
+                Float (Rs. {activeShift.opening_float.toLocaleString()}) + Sales
+                {activeShift.total_payouts ? ` - Payouts (Rs. ${activeShift.total_payouts.toLocaleString()})` : ''}
               </span>
             </div>
 

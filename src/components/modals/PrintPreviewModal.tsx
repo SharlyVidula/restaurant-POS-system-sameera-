@@ -20,7 +20,7 @@ export const PrintPreviewModal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'visual' | 'hexdump'>('visual');
   const [copied, setCopied] = useState(false);
   const [paperWidth, setPaperWidth] = useState<80 | 58>(printPreview?.width || 80);
-  const [currentSlipType, setCurrentSlipType] = useState<'RECEIPT' | 'KOT' | 'BILL' | 'X_REPORT' | 'Z_REPORT'>(
+  const [currentSlipType, setCurrentSlipType] = useState<'RECEIPT' | 'KOT' | 'BILL' | 'X_REPORT' | 'Z_REPORT' | 'PAYOUT_VOUCHER'>(
     printPreview?.type || 'RECEIPT'
   );
   const [printSuccessNotice, setPrintSuccessNotice] = useState(false);
@@ -31,6 +31,7 @@ export const PrintPreviewModal: React.FC = () => {
   const kotData = printPreview.kotData;
   const xReportData = printPreview.xReportData;
   const zReportData = printPreview.zReportData;
+  const payoutData = printPreview.payoutData;
 
   // Dynamically calculate ESC/POS Hex Dump based on selected slip type and paper width
   const currentHexDump = useMemo(() => {
@@ -615,6 +616,77 @@ export const PrintPreviewModal: React.FC = () => {
                     <div className="flex justify-between font-black text-xs">
                       <span>FINAL SHIFT TOTAL:</span>
                       <span>Rs. {zReportData.shift.total_sales.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : currentSlipType === 'PAYOUT_VOUCHER' && payoutData ? (
+                /* --- DYNAMIC CASH PAYOUT / LENDING VOUCHER --- */
+                <div>
+                  <div className="text-center space-y-0.5 pb-2 flex flex-col items-center">
+                    <div className="mb-1 flex justify-center">
+                      <img 
+                        src={southernSpoonLogo} 
+                        alt={restaurant.name} 
+                        className="w-16 h-16 object-contain mx-auto mix-blend-multiply"
+                      />
+                    </div>
+                    <div className="font-extrabold text-sm tracking-wider uppercase">
+                      {restaurant.name}
+                    </div>
+                    <div className="text-[10px] text-gray-700">{restaurant.address}</div>
+                    <div className="text-xs font-black uppercase text-rose-900 border-2 border-rose-900 px-2 py-0.5 mt-1">
+                      *** {payoutData.type.toUpperCase()} VOUCHER ***
+                    </div>
+                    <div className="border-b-2 border-dashed border-gray-900 my-2 w-full" />
+                  </div>
+
+                  <div className="space-y-1 text-[10px]">
+                    <div className="flex justify-between font-bold">
+                      <span>Voucher: #CSH-{payoutData.id.toString().slice(-6)}</span>
+                      <span>Type: {payoutData.type.toUpperCase()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Date: {payoutData.timestamp}</span>
+                      <span>Cashier: {payoutData.cashier_name}</span>
+                    </div>
+                    <div className="flex justify-between font-bold">
+                      <span>Authorized By:</span>
+                      <span className="text-emerald-800 font-extrabold">{payoutData.authorized_by}</span>
+                    </div>
+                    <div className="border-b border-dashed border-gray-800 my-1.5" />
+                  </div>
+
+                  <div className="py-2 space-y-2 text-[10px]">
+                    <div className="flex justify-between items-center bg-gray-100 p-2 rounded">
+                      <span className="font-bold">HANDED OVER TO:</span>
+                      <span className="font-black text-xs text-black">{payoutData.recipient}</span>
+                    </div>
+
+                    <div className="p-2 border border-gray-300 rounded text-gray-800">
+                      <span className="font-bold block mb-0.5">REASON / PURPOSE:</span>
+                      <p className="italic">{payoutData.reason}</p>
+                    </div>
+
+                    <div className="border-b-2 border-dashed border-gray-900 my-2" />
+
+                    <div className="flex justify-between font-black text-sm text-black">
+                      <span>AMOUNT RELEASED:</span>
+                      <span className="font-mono font-black text-base">
+                        Rs. {payoutData.amount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Signatures */}
+                  <div className="border-t-2 border-dashed border-gray-900 pt-4 mt-2 text-[9px] space-y-4 text-gray-700">
+                    <div className="flex justify-between">
+                      <div>Recipient Sign: __________________</div>
+                    </div>
+                    <div className="flex justify-between">
+                      <div>Manager Sign:   __________________</div>
+                    </div>
+                    <div className="text-center italic text-[8px] pt-1">
+                      Official Southern Spoon Cash Audit Record • Physical Drawer Released
                     </div>
                   </div>
                 </div>
