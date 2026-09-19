@@ -233,16 +233,16 @@ export const PrintPreviewModal: React.FC = () => {
         </div>
 
         {/* Content View */}
-        <div className="p-6 overflow-y-auto flex-1 bg-slate-950/40 flex justify-center scrollbar-thin scrollbar-thumb-slate-800">
+        <div className="p-6 overflow-y-auto flex-1 bg-slate-950/40 flex justify-center items-start scrollbar-thin scrollbar-thumb-slate-800">
           {activeTab === 'visual' ? (
             /* Realistic Thermal Paper Roll */
             <div
               id="thermal-printable-slip"
               style={{ width: paperWidth === 80 ? '380px' : '290px' }}
-              className="bg-[#fcfaf2] text-[#111] p-6 shadow-receipt rounded-sm font-mono text-[11px] leading-relaxed relative animate-print-slip select-text border border-amber-900/10"
+              className="bg-[#fcfaf2] text-[#111] p-6 shadow-receipt rounded-sm font-mono text-[11px] leading-relaxed relative select-text border border-amber-900/10 h-auto min-h-fit self-start"
             >
               {/* Paper Jagged Top Tear Effect */}
-              <div className="tear-effect absolute top-0 left-0 right-0 h-2 bg-[radial-gradient(circle,transparent_4px,#fcfaf2_4px)] bg-[length:12px_12px] -mt-1" />
+              <div className="tear-effect absolute top-0 left-0 right-0 h-2 bg-[radial-gradient(circle,transparent_4px,#fcfaf2_4px)] bg-[length:12px_12px] -mt-1 pointer-events-none" />
 
               {/* SLIP CONTENT RENDERING */}
               {currentSlipType === 'RECEIPT' && order ? (
@@ -724,10 +724,10 @@ export const PrintPreviewModal: React.FC = () => {
               )}
 
               {/* Feed clearance spacer so physical cutter blade never crops the final receipt text */}
-              <div className="h-10 print:h-20 w-full" aria-hidden="true" />
+              <div className="hidden print:block print:h-24 w-full" aria-hidden="true" />
 
               {/* Paper Jagged Bottom Tear Effect */}
-              <div className="tear-effect absolute bottom-0 left-0 right-0 h-2 bg-[radial-gradient(circle,transparent_4px,#fcfaf2_4px)] bg-[length:12px_12px] -mb-1 rotate-180" />
+              <div className="tear-effect absolute -bottom-2 left-0 right-0 h-2 bg-[radial-gradient(circle,transparent_4px,#fcfaf2_4px)] bg-[length:12px_12px] rotate-180 pointer-events-none" />
             </div>
           ) : (
             /* Hex Dump Inspector */

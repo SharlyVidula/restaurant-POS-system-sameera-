@@ -130,13 +130,18 @@ export class EscPosBuilder {
   }
 
   cut(partial: boolean = false): this {
-    this.feedLines(6); // 6 lines feed advances paper past the hardware cutter blade
+    // 8 lines of physical LF feed advance the paper ~40mm past the cutter knife
+    for (let i = 0; i < 8; i++) {
+      this.buffer.push(LF);
+    }
     this.buffer.push(GS, 0x56, partial ? 0x01 : 0x00);
     return this;
   }
 
-  feedLines(n: number = 3): this {
-    this.buffer.push(ESC, 0x64, n);
+  feedLines(n: number = 4): this {
+    for (let i = 0; i < n; i++) {
+      this.buffer.push(LF);
+    }
     return this;
   }
 
