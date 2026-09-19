@@ -58,11 +58,12 @@
   #thermal-printable-slip {
     position: absolute;
     left: 0;
+    right: 0;
     top: 0;
     width: 100% !important;
     max-width: 80mm;
-    margin: 0 auto;
-    padding: 0mm 1mm 10mm 1mm !important; /* Tight 0mm head and 10mm bottom margin */
+    margin: 0 auto !important;
+    padding: 0mm 3mm 10mm 3mm !important; /* Tight 0mm head, centered 3mm sides, 10mm bottom */
     box-shadow: none !important;
     border: none !important;
     background: #ffffff !important;

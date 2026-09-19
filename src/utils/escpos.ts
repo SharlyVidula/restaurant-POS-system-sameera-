@@ -14,10 +14,12 @@ export class EscPosBuilder {
     this.width = width;
     this.maxChars = width === 80 ? 42 : 32;
     this.init();
+    this.centerPrintArea();
   }
 
   init(): this {
     this.buffer.push(ESC, 0x40); // ESC @
+    this.buffer.push(ESC, 0x32); // ESC 2 (standard 1/6 inch line spacing)
     return this;
   }
 
@@ -114,8 +116,42 @@ export class EscPosBuilder {
     return this;
   }
 
+  setLeftMargin(dots: number): this {
+    this.buffer.push(GS, 0x4C, dots % 256, Math.floor(dots / 256));
+    return this;
+  }
+
+  setPrintAreaWidth(dots: number): this {
+    this.buffer.push(GS, 0x57, dots % 256, Math.floor(dots / 256));
+    return this;
+  }
+
+  centerPrintArea(): this {
+    if (this.width === 80) {
+      // 80mm printable width is 576 dots total.
+      // 42 cols at ~10 dots/char = 424 dots.
+      // Centering margin: (576 - 424) / 2 = 76 dots (9.5mm).
+      this.setLeftMargin(76);
+      this.setPrintAreaWidth(424);
+    } else {
+      // 58mm printable width is 384 dots total.
+      // 32 cols at ~9 dots/char = 288 dots.
+      // Centering margin: (384 - 288) / 2 = 48 dots (6mm).
+      this.setLeftMargin(48);
+      this.setPrintAreaWidth(288);
+    }
+    return this;
+  }
+
+  resetPrintArea(): this {
+    this.setLeftMargin(0);
+    this.setPrintAreaWidth(this.width === 80 ? 576 : 384);
+    return this;
+  }
+
   logo(): this {
     try {
+      this.resetPrintArea(); // Ensure logo raster spans the full 576 dots with its precomputed symmetrical centering
       const logoBytes = getLogoEscPosBytes(this.width);
       if (logoBytes && logoBytes.length > 0) {
         for (let i = 0; i < logoBytes.length; i++) {
@@ -123,18 +159,21 @@ export class EscPosBuilder {
         }
         this.newLine();
       }
+      this.centerPrintArea(); // Switch to centered text area for all subsequent receipt lines
     } catch (err) {
       console.warn('Failed to append ESC/POS logo bytes', err);
+      this.centerPrintArea();
     }
     return this;
   }
 
   cut(partial: boolean = false): this {
-    // 4 lines of physical LF feed advance the paper ~18mm past the cutter knife
+    // 4 lines of physical LF feed advance the paper past the cutter knife
     for (let i = 0; i < 4; i++) {
       this.buffer.push(LF);
     }
     this.buffer.push(GS, 0x56, partial ? 0x01 : 0x00);
+    this.resetPrintArea();
     return this;
   }
 

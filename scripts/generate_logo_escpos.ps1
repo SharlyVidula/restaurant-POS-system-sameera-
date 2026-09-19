@@ -23,13 +23,13 @@ for ($y = 0; $y -lt $bmpScan.Height; $y++) {
 }
 $bmpScan.Dispose()
 
-# Tight crop dimensions with minimal 4px border
-$cropX = [Math]::Max(0, $minX - 4)
-$cropY = [Math]::Max(0, $minY - 4)
-$cropW = [Math]::Min($srcImage.Width - $cropX, ($maxX - $minX) + 8)
-$cropH = [Math]::Min($srcImage.Height - $cropY, ($maxY - $minY) + 8)
+# Tight crop dimensions with exact 0px border
+$cropX = $minX
+$cropY = $minY
+$cropW = ($maxX - $minX) + 1
+$cropH = ($maxY - $minY) + 1
 
-Write-Host "Cropped Region: X=$cropX, Y=$cropY, W=$cropW, H=$cropH"
+Write-Host "Exact Content Bounds: X=$cropX, Y=$cropY, W=$cropW, H=$cropH"
 
 # 2. Export tightly cropped PNG for UI & HTML printing
 $croppedPng = New-Object System.Drawing.Bitmap($cropW, $cropH)
@@ -93,14 +93,14 @@ function Generate-EscPosRaster([int]$totalWidthDots, [int]$targetLogoWidth) {
     return $rasterBytes.ToArray()
 }
 
-# 80mm: 576 dots wide total, logo 384 wide
-Write-Host "Generating tight 80mm ESC/POS bitmap..."
-$bytes80 = Generate-EscPosRaster -totalWidthDots 576 -targetLogoWidth 384
+# 80mm: 576 dots wide total, logo 424 wide (centered with 76 dots margin on both sides)
+Write-Host "Generating tight 80mm ESC/POS bitmap (424px wide)..."
+$bytes80 = Generate-EscPosRaster -totalWidthDots 576 -targetLogoWidth 424
 $base64_80 = [Convert]::ToBase64String($bytes80)
 
-# 58mm: 384 dots wide total, logo 260 wide
-Write-Host "Generating tight 58mm ESC/POS bitmap..."
-$bytes58 = Generate-EscPosRaster -totalWidthDots 384 -targetLogoWidth 260
+# 58mm: 384 dots wide total, logo 288 wide (centered with 48 dots margin on both sides)
+Write-Host "Generating tight 58mm ESC/POS bitmap (288px wide)..."
+$bytes58 = Generate-EscPosRaster -totalWidthDots 384 -targetLogoWidth 288
 $base64_58 = [Convert]::ToBase64String($bytes58)
 
 $croppedPng.Dispose()
