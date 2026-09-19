@@ -62,7 +62,7 @@
     width: 100% !important;
     max-width: 80mm;
     margin: 0 auto;
-    padding: 2mm 2mm 30mm 2mm !important; /* 30mm bottom clearance ensures auto-cutter blade never cuts text */
+    padding: 0mm 1mm 10mm 1mm !important; /* Tight 0mm head and 10mm bottom margin */
     box-shadow: none !important;
     border: none !important;
     background: #ffffff !important;
@@ -75,8 +75,8 @@
   }
   #thermal-printable-slip img {
     display: block !important;
-    margin: 0 auto 8px auto !important;
-    max-width: 50mm !important;
+    margin: 0 auto 3px auto !important;
+    max-width: 44mm !important;
     height: auto !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;

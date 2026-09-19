@@ -239,7 +239,7 @@ export const PrintPreviewModal: React.FC = () => {
             <div
               id="thermal-printable-slip"
               style={{ width: paperWidth === 80 ? '380px' : '290px' }}
-              className="bg-[#fcfaf2] text-[#111] p-6 shadow-receipt rounded-sm font-mono text-[11px] leading-relaxed relative select-text border border-amber-900/10 h-auto min-h-fit self-start"
+              className="bg-[#fcfaf2] text-[#111] px-5 py-3.5 shadow-receipt rounded-sm font-mono text-[11px] leading-relaxed relative select-text border border-amber-900/10 h-auto min-h-fit self-start"
             >
               {/* Paper Jagged Top Tear Effect */}
               <div className="tear-effect absolute top-0 left-0 right-0 h-2 bg-[radial-gradient(circle,transparent_4px,#fcfaf2_4px)] bg-[length:12px_12px] -mt-1 pointer-events-none" />
@@ -249,11 +249,11 @@ export const PrintPreviewModal: React.FC = () => {
                 /* --- DYNAMIC CUSTOMER RECEIPT --- */
                 <div>
                   <div className="text-center space-y-0.5 pb-2 flex flex-col items-center">
-                    <div className="mb-2 flex justify-center">
+                    <div className="mb-1 flex justify-center">
                       <img 
                         src={thermalLogo} 
                         alt={restaurant.name} 
-                        className="w-28 h-28 object-contain mx-auto"
+                        className="w-24 h-24 object-contain mx-auto"
                       />
                     </div>
                     <div className="font-extrabold text-sm tracking-wider uppercase">
@@ -445,11 +445,11 @@ export const PrintPreviewModal: React.FC = () => {
                 /* --- DYNAMIC GUEST CHECK / BILL --- */
                 <div>
                   <div className="text-center space-y-0.5 pb-2 flex flex-col items-center">
-                    <div className="mb-2 flex justify-center">
+                    <div className="mb-1 flex justify-center">
                       <img 
                         src={thermalLogo} 
                         alt={restaurant.name} 
-                        className="w-28 h-28 object-contain mx-auto"
+                        className="w-24 h-24 object-contain mx-auto"
                       />
                     </div>
                     <div className="font-extrabold text-sm tracking-wider uppercase">
@@ -636,11 +636,11 @@ export const PrintPreviewModal: React.FC = () => {
                 /* --- DYNAMIC CASH PAYOUT / LENDING VOUCHER --- */
                 <div>
                   <div className="text-center space-y-0.5 pb-2 flex flex-col items-center">
-                    <div className="mb-2 flex justify-center">
+                    <div className="mb-1 flex justify-center">
                       <img 
                         src={thermalLogo} 
                         alt={restaurant.name} 
-                        className="w-24 h-24 object-contain mx-auto"
+                        className="w-20 h-20 object-contain mx-auto"
                       />
                     </div>
                     <div className="font-extrabold text-sm tracking-wider uppercase">
@@ -722,9 +722,6 @@ export const PrintPreviewModal: React.FC = () => {
                   <p className="text-[10px] text-gray-700 whitespace-pre-wrap">{printPreview.plainText}</p>
                 </div>
               )}
-
-              {/* Feed clearance spacer so physical cutter blade never crops the final receipt text */}
-              <div className="hidden print:block print:h-24 w-full" aria-hidden="true" />
 
               {/* Paper Jagged Bottom Tear Effect */}
               <div className="tear-effect absolute -bottom-2 left-0 right-0 h-2 bg-[radial-gradient(circle,transparent_4px,#fcfaf2_4px)] bg-[length:12px_12px] rotate-180 pointer-events-none" />

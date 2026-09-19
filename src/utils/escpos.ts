@@ -130,15 +130,15 @@ export class EscPosBuilder {
   }
 
   cut(partial: boolean = false): this {
-    // 8 lines of physical LF feed advance the paper ~40mm past the cutter knife
-    for (let i = 0; i < 8; i++) {
+    // 4 lines of physical LF feed advance the paper ~18mm past the cutter knife
+    for (let i = 0; i < 4; i++) {
       this.buffer.push(LF);
     }
     this.buffer.push(GS, 0x56, partial ? 0x01 : 0x00);
     return this;
   }
 
-  feedLines(n: number = 4): this {
+  feedLines(n: number = 2): this {
     for (let i = 0; i < n; i++) {
       this.buffer.push(LF);
     }
@@ -294,7 +294,6 @@ export function buildCustomerReceiptEscPos(
     .bold(false)
     .text("*** Have a wonderful day in Galle ***")
     .newLine()
-    .feedLines(3)
     .cut();
 
   return printer;
@@ -392,7 +391,6 @@ export function buildBillEscPos(
     .newLine()
     .text("Cash, Credit/Debit Cards & LankaQR accepted")
     .newLine()
-    .feedLines(3)
     .cut();
 
   return printer;
@@ -452,8 +450,7 @@ export function buildKotEscPos(
     printer.line('.');
   });
 
-  printer.feedLines(2)
-    .alignCenter()
+  printer.alignCenter()
     .text("--- DISPATCH TO STATION ---")
     .newLine()
     .cut();
@@ -605,7 +602,6 @@ export function buildZReportEscPos(report: ZReportData, restaurant: RestaurantPr
     .newLine()
     .text("Manager Signature: __________________")
     .newLine()
-    .feedLines(3)
     .cut();
 
   return printer;
@@ -655,13 +651,12 @@ export function buildPayoutVoucherEscPos(
     .doubleLine();
 
   printer.alignCenter()
-    .feedLines(1)
+    .newLine()
     .text("Recipient Signature: __________________")
     .newLine()
     .newLine()
     .text("Manager Signature:   __________________")
     .newLine()
-    .feedLines(3)
     .cut();
 
   return printer;
