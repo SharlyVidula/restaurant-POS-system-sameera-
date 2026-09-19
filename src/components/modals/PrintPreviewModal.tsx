@@ -13,7 +13,7 @@ import {
   ClipboardList
 } from 'lucide-react';
 import { buildCustomerReceiptEscPos, buildKotEscPos, buildBillEscPos } from '../../utils/escpos';
-import southernSpoonLogo from '../../assets/logo.png';
+import thermalLogo from '../../assets/thermal_logo.png';
 
 export const PrintPreviewModal: React.FC = () => {
   const { printPreview, closePrintPreview, restaurant } = usePosStore();
@@ -69,18 +69,31 @@ export const PrintPreviewModal: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     setPrintSuccessNotice(true);
-    // 1. Commercial POS direct ESC/POS hardware print (sends raw bytes to thermal printer)
+    let printedViaEscpos = false;
+
+    // 1. Commercial POS direct ESC/POS hardware print (sends raw 1-bit thermal raster bytes directly to printer)
     if (typeof (window as any).electronAPI?.printReceipt === 'function' && currentHexDump) {
-      (window as any).electronAPI.printReceipt(currentHexDump);
+      try {
+        const res = await (window as any).electronAPI.printReceipt(currentHexDump);
+        if (res && res.success) {
+          printedViaEscpos = true;
+        }
+      } catch (err) {
+        console.warn('Hardware ESC/POS direct dispatch error, falling back:', err);
+      }
     }
-    // 2. Direct silent kiosk HTML print fallback
-    if (typeof (window as any).electronAPI?.silentPrint === 'function') {
-      (window as any).electronAPI.silentPrint();
-    } else {
-      window.print();
+
+    // 2. Direct silent kiosk HTML print fallback (if direct ESC/POS hardware is not available)
+    if (!printedViaEscpos) {
+      if (typeof (window as any).electronAPI?.silentPrint === 'function') {
+        (window as any).electronAPI.silentPrint();
+      } else {
+        window.print();
+      }
     }
+
     setTimeout(() => setPrintSuccessNotice(false), 3000);
   };
 
@@ -236,11 +249,11 @@ export const PrintPreviewModal: React.FC = () => {
                 /* --- DYNAMIC CUSTOMER RECEIPT --- */
                 <div>
                   <div className="text-center space-y-0.5 pb-2 flex flex-col items-center">
-                    <div className="mb-1 flex justify-center">
+                    <div className="mb-2 flex justify-center">
                       <img 
-                        src={southernSpoonLogo} 
+                        src={thermalLogo} 
                         alt={restaurant.name} 
-                        className="w-20 h-20 object-contain mx-auto mix-blend-multiply"
+                        className="w-28 h-28 object-contain mx-auto"
                       />
                     </div>
                     <div className="font-extrabold text-sm tracking-wider uppercase">
@@ -432,11 +445,11 @@ export const PrintPreviewModal: React.FC = () => {
                 /* --- DYNAMIC GUEST CHECK / BILL --- */
                 <div>
                   <div className="text-center space-y-0.5 pb-2 flex flex-col items-center">
-                    <div className="mb-1 flex justify-center">
+                    <div className="mb-2 flex justify-center">
                       <img 
-                        src={southernSpoonLogo} 
+                        src={thermalLogo} 
                         alt={restaurant.name} 
-                        className="w-20 h-20 object-contain mx-auto mix-blend-multiply"
+                        className="w-28 h-28 object-contain mx-auto"
                       />
                     </div>
                     <div className="font-extrabold text-sm tracking-wider uppercase">
@@ -623,11 +636,11 @@ export const PrintPreviewModal: React.FC = () => {
                 /* --- DYNAMIC CASH PAYOUT / LENDING VOUCHER --- */
                 <div>
                   <div className="text-center space-y-0.5 pb-2 flex flex-col items-center">
-                    <div className="mb-1 flex justify-center">
+                    <div className="mb-2 flex justify-center">
                       <img 
-                        src={southernSpoonLogo} 
+                        src={thermalLogo} 
                         alt={restaurant.name} 
-                        className="w-16 h-16 object-contain mx-auto mix-blend-multiply"
+                        className="w-24 h-24 object-contain mx-auto"
                       />
                     </div>
                     <div className="font-extrabold text-sm tracking-wider uppercase">
@@ -694,9 +707,9 @@ export const PrintPreviewModal: React.FC = () => {
                 /* Generic Clean Fallback */
                 <div className="py-4 text-center space-y-2 flex flex-col items-center">
                   <img 
-                    src={southernSpoonLogo} 
+                    src={thermalLogo} 
                     alt={restaurant.name} 
-                    className="w-16 h-16 object-contain mx-auto mix-blend-multiply mb-1"
+                    className="w-24 h-24 object-contain mx-auto mb-2"
                   />
                   <div className="font-bold text-sm uppercase">{restaurant.name}</div>
                   {restaurant.branch && 
@@ -709,6 +722,9 @@ export const PrintPreviewModal: React.FC = () => {
                   <p className="text-[10px] text-gray-700 whitespace-pre-wrap">{printPreview.plainText}</p>
                 </div>
               )}
+
+              {/* Feed clearance spacer so physical cutter blade never crops the final receipt text */}
+              <div className="h-10 print:h-20 w-full" aria-hidden="true" />
 
               {/* Paper Jagged Bottom Tear Effect */}
               <div className="tear-effect absolute bottom-0 left-0 right-0 h-2 bg-[radial-gradient(circle,transparent_4px,#fcfaf2_4px)] bg-[length:12px_12px] -mb-1 rotate-180" />

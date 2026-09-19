@@ -1,4 +1,5 @@
 import { Order, OrderItem, RestaurantProfile, XReportData, ZReportData, CashTransaction } from '../types';
+import { getLogoEscPosBytes } from './logoData';
 
 export const ESC = 0x1B;
 export const GS = 0x1D;
@@ -113,8 +114,23 @@ export class EscPosBuilder {
     return this;
   }
 
+  logo(): this {
+    try {
+      const logoBytes = getLogoEscPosBytes(this.width);
+      if (logoBytes && logoBytes.length > 0) {
+        for (let i = 0; i < logoBytes.length; i++) {
+          this.buffer.push(logoBytes[i]);
+        }
+        this.newLine();
+      }
+    } catch (err) {
+      console.warn('Failed to append ESC/POS logo bytes', err);
+    }
+    return this;
+  }
+
   cut(partial: boolean = false): this {
-    this.feedLines(3);
+    this.feedLines(6); // 6 lines feed advances paper past the hardware cutter blade
     this.buffer.push(GS, 0x56, partial ? 0x01 : 0x00);
     return this;
   }
@@ -159,7 +175,8 @@ export function buildCustomerReceiptEscPos(
   const printer = new EscPosBuilder(width);
 
   // Header
-  printer.alignCenter()
+  printer.logo()
+    .alignCenter()
     .bold(true)
     .doubleSize(true)
     .text(restaurant.name)
@@ -272,6 +289,7 @@ export function buildCustomerReceiptEscPos(
     .bold(false)
     .text("*** Have a wonderful day in Galle ***")
     .newLine()
+    .feedLines(3)
     .cut();
 
   return printer;
@@ -288,7 +306,8 @@ export function buildBillEscPos(
   const printer = new EscPosBuilder(width);
 
   // Header
-  printer.alignCenter()
+  printer.logo()
+    .alignCenter()
     .bold(true)
     .doubleSize(true)
     .text(restaurant.name)
@@ -368,6 +387,7 @@ export function buildBillEscPos(
     .newLine()
     .text("Cash, Credit/Debit Cards & LankaQR accepted")
     .newLine()
+    .feedLines(3)
     .cut();
 
   return printer;
@@ -580,6 +600,7 @@ export function buildZReportEscPos(report: ZReportData, restaurant: RestaurantPr
     .newLine()
     .text("Manager Signature: __________________")
     .newLine()
+    .feedLines(3)
     .cut();
 
   return printer;
@@ -594,7 +615,8 @@ export function buildPayoutVoucherEscPos(
   width: 80 | 58 = 80
 ): EscPosBuilder {
   const printer = new EscPosBuilder(width);
-  printer.alignCenter()
+  printer.logo()
+    .alignCenter()
     .bold(true)
     .doubleSize(true)
     .text(restaurant.name)
@@ -634,6 +656,7 @@ export function buildPayoutVoucherEscPos(
     .newLine()
     .text("Manager Signature:   __________________")
     .newLine()
+    .feedLines(3)
     .cut();
 
   return printer;
