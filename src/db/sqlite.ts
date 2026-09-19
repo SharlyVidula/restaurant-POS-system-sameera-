@@ -43,7 +43,7 @@ class SQLiteLocalDatabase {
   private drawerLogs: Array<{ id: number; timestamp: string; reason: string; cashier: string }> = [];
   private cashTransactions: CashTransaction[] = [];
   private priceAudits: PriceChangeAudit[] = [];
-  private adminPin: string = '7788';
+  private adminPin: string = '9001';
   private activeShiftId: number = 101;
   private isInitialized = false;
 
@@ -90,7 +90,12 @@ class SQLiteLocalDatabase {
       this.priceAudits = storedPriceAudits ? JSON.parse(storedPriceAudits) : [];
 
       const storedAdminPin = localStorage.getItem(STORAGE_KEYS.ADMIN_PIN);
-      if (storedAdminPin) this.adminPin = storedAdminPin;
+      if (storedAdminPin && storedAdminPin !== '7788') {
+        this.adminPin = storedAdminPin;
+      } else {
+        this.adminPin = '9001';
+        localStorage.setItem(STORAGE_KEYS.ADMIN_PIN, '9001');
+      }
     } catch (e) {
       console.warn("Falling back to fresh database seed", e);
       this.resetToSeedData();
@@ -108,7 +113,7 @@ class SQLiteLocalDatabase {
     this.activeShiftId = INITIAL_SHIFT.id;
     this.cashTransactions = [];
     this.priceAudits = [];
-    this.adminPin = '7788';
+    this.adminPin = '9001';
     this.persistAll();
   }
 
