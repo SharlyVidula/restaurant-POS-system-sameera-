@@ -8,4 +8,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPrinterStatus: () => ipcRenderer.invoke('get-printer-status'),
   checkForGitUpdates: () => ipcRenderer.invoke('check-for-git-updates'),
   pullGitUpdates: () => ipcRenderer.invoke('pull-git-updates'),
+  saveReportFile: (data: { subfolder: string; filename: string; content: string }) => ipcRenderer.invoke('save-report-file', data),
+  openReportsFolder: (subfolder?: string) => ipcRenderer.invoke('open-reports-folder', subfolder),
 });

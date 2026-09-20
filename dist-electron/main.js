@@ -148,6 +148,50 @@ electron_1.app.whenReady().then(() => {
             return { success: false, error: e.message };
         }
     });
+    // Save Non-Editable Official Audit Report to Computer Storage
+    electron_1.ipcMain.handle('save-report-file', async (_event, data) => {
+        try {
+            const documentsPath = path_1.default.join(os_1.default.homedir(), 'Documents', 'SouthernSpoon_Reports', data.subfolder || 'General');
+            await fs_1.default.promises.mkdir(documentsPath, { recursive: true });
+            const targetFilePath = path_1.default.join(documentsPath, data.filename);
+            // Write file content (UTF-8)
+            await fs_1.default.promises.writeFile(targetFilePath, data.content, 'utf8');
+            // Set read-only attribute on Windows so it cannot be casually modified
+            try {
+                if (process.platform === 'win32') {
+                    await execPromise(`attrib +R "${targetFilePath}"`);
+                }
+                else {
+                    fs_1.default.chmodSync(targetFilePath, 0o444);
+                }
+            }
+            catch (attrErr) {
+                console.warn('Could not set read-only attribute', attrErr);
+            }
+            console.log('[Audit Report Saved]', targetFilePath);
+            return {
+                success: true,
+                filePath: targetFilePath,
+                message: `Saved official report to ${targetFilePath}`
+            };
+        }
+        catch (err) {
+            console.error('[Save Report Error]', err);
+            return { success: false, error: err.message };
+        }
+    });
+    // Open Reports Folder in Windows File Explorer
+    electron_1.ipcMain.handle('open-reports-folder', async (_event, subfolder) => {
+        try {
+            const documentsPath = path_1.default.join(os_1.default.homedir(), 'Documents', 'SouthernSpoon_Reports', subfolder || '');
+            await fs_1.default.promises.mkdir(documentsPath, { recursive: true });
+            await electron_1.shell.openPath(documentsPath);
+            return { success: true };
+        }
+        catch (err) {
+            return { success: false, error: err.message };
+        }
+    });
     electron_1.app.on('activate', () => {
         if (electron_1.BrowserWindow.getAllWindows().length === 0)
             createWindow();

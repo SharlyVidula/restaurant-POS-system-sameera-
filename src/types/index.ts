@@ -189,3 +189,54 @@ export interface RestaurantProfile {
   wifi_pass: string;
   footer_message: string;
 }
+
+export interface DailySalesReportData {
+  date: string; // YYYY-MM-DD
+  generated_at: string;
+  order_count: number;
+  total_gross_sales: number;
+  total_discount: number;
+  total_net_sales: number;
+  total_tax: number;
+  total_service_charge: number;
+  total_items_sold: number;
+  average_order_value: number;
+  sales_by_payment: { method: string; count: number; total: number; percentage: number }[];
+  sales_by_category: { category_name: string; item_count: number; total_amount: number; percentage: number }[];
+  top_selling_items: { item_name: string; quantity: number; revenue: number }[];
+  orders: Array<{
+    order_number: string;
+    time: string;
+    total: number;
+    payment_method: string;
+    items_count: number;
+    table?: string;
+  }>;
+}
+
+export interface MonthlySalesReportData {
+  year: number;
+  month: number; // 1-12
+  month_name: string;
+  generated_at: string;
+  total_days_active: number;
+  total_orders: number;
+  total_gross_sales: number;
+  total_discount: number;
+  total_net_sales: number;
+  total_tax: number;
+  total_service_charge: number;
+  total_items_sold: number;
+  average_daily_sales: number;
+  sales_by_payment: { method: string; count: number; total: number; percentage: number }[];
+  sales_by_category: { category_name: string; item_count: number; total_amount: number; percentage: number }[];
+  daily_breakdown: Array<{
+    date: string; // YYYY-MM-DD
+    day: number;
+    order_count: number;
+    cash_total: number;
+    card_total: number;
+    qr_total: number;
+    total_sales: number;
+  }>;
+}

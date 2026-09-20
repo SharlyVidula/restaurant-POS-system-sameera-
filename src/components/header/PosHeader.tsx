@@ -14,7 +14,8 @@ import {
   UtensilsCrossed,
   GitBranch,
   Tag,
-  ShieldCheck
+  ShieldCheck,
+  BarChart3
 } from 'lucide-react';
 import { OrderType } from '../../types';
 import { GitUpdateModal } from '../modals/GitUpdateModal';
@@ -38,7 +39,8 @@ export const PosHeader: React.FC = () => {
     setUserRole,
     requireAdminAuth,
     openCashPayoutModal,
-    openMenuPriceModal
+    openMenuPriceModal,
+    openSalesReport
   } = usePosStore();
 
   const [time, setTime] = useState<string>('');
@@ -181,10 +183,20 @@ export const PosHeader: React.FC = () => {
         <button
           onClick={openHistoryModal}
           title="Order History & Receipts"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 hover:text-white transition-all"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 hover:text-white transition-all cursor-pointer"
         >
           <History className="w-3.5 h-3.5 text-blue-400" />
           <span className="hidden md:inline">Orders</span>
+        </button>
+
+        {/* Sales Reports (Daily & Monthly) */}
+        <button
+          onClick={openSalesReport}
+          title="Official Daily & Monthly Sales Reports, Audits & Cloud Sync"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-emerald-950/80 to-teal-950/80 text-emerald-300 border border-emerald-700/50 hover:from-emerald-900 hover:to-teal-900 transition-all cursor-pointer shadow-sm"
+        >
+          <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Reports</span>
         </button>
 
         {/* X-Report */}

@@ -9,4 +9,6 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     getPrinterStatus: () => electron_1.ipcRenderer.invoke('get-printer-status'),
     checkForGitUpdates: () => electron_1.ipcRenderer.invoke('check-for-git-updates'),
     pullGitUpdates: () => electron_1.ipcRenderer.invoke('pull-git-updates'),
+    saveReportFile: (data) => electron_1.ipcRenderer.invoke('save-report-file', data),
+    openReportsFolder: (subfolder) => electron_1.ipcRenderer.invoke('open-reports-folder', subfolder),
 });

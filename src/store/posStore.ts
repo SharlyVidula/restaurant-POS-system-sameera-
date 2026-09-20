@@ -81,6 +81,7 @@ interface PosState {
   isPaymentModalOpen: boolean;
   isTableModalOpen: boolean;
   isHistoryModalOpen: boolean;
+  isSalesReportModalOpen: boolean;
   isXReportModalOpen: boolean;
   isZReportModalOpen: boolean;
   isDrawerLogModalOpen: boolean;
@@ -157,6 +158,8 @@ interface PosState {
   closeTableModal: () => void;
   openHistoryModal: () => void;
   closeHistoryModal: () => void;
+  openSalesReport: () => void;
+  closeSalesReport: () => void;
   openXReport: () => void;
   closeXReport: () => void;
   openZReport: () => void;
@@ -194,6 +197,7 @@ export const usePosStore = create<PosState>((set, get) => ({
   isPaymentModalOpen: false,
   isTableModalOpen: false,
   isHistoryModalOpen: false,
+  isSalesReportModalOpen: false,
   isXReportModalOpen: false,
   isZReportModalOpen: false,
   isDrawerLogModalOpen: false,
@@ -556,6 +560,9 @@ export const usePosStore = create<PosState>((set, get) => ({
 
   openHistoryModal: () => set({ isHistoryModalOpen: true, recentOrders: posDatabase.getOrders() }),
   closeHistoryModal: () => set({ isHistoryModalOpen: false }),
+
+  openSalesReport: () => set({ isSalesReportModalOpen: true }),
+  closeSalesReport: () => set({ isSalesReportModalOpen: false }),
 
   openXReport: () => set({ isXReportModalOpen: true }),
   closeXReport: () => set({ isXReportModalOpen: false }),

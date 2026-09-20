@@ -1,4 +1,4 @@
-import { Order, OrderItem, RestaurantProfile, XReportData, ZReportData, CashTransaction } from '../types';
+import { Order, OrderItem, RestaurantProfile, XReportData, ZReportData, CashTransaction, DailySalesReportData } from '../types';
 import { getLogoEscPosBytes } from './logoData';
 
 export const ESC = 0x1B;
@@ -650,6 +650,74 @@ export function buildPayoutVoucherEscPos(
     .newLine()
     .text("Manager Signature:   __________________")
     .newLine()
+    .cut();
+
+  return printer;
+}
+
+/**
+ * Generate binary ESC/POS payload for Daily Sales Report
+ */
+export function buildDailyReportEscPos(report: DailySalesReportData, restaurant: RestaurantProfile): EscPosBuilder {
+  const printer = new EscPosBuilder(80);
+
+  printer.alignCenter()
+    .bold(true)
+    .text("================================================")
+    .newLine()
+    .text("       DAILY SALES & FINANCIAL AUDIT")
+    .newLine()
+    .text("================================================")
+    .newLine()
+    .bold(false)
+    .text(`Date: ${report.date} | Printed: ${new Date().toLocaleTimeString()}`)
+    .newLine()
+    .text(restaurant.name)
+    .newLine()
+    .text(`${restaurant.branch}, ${restaurant.city}`)
+    .newLine()
+    .line('-');
+
+  printer.alignLeft()
+    .twoColumn("Total Bills Settled:", `${report.order_count}`)
+    .twoColumn("Food Items Sold:", `${report.total_items_sold}`)
+    .twoColumn("Average Check:", `Rs. ${Math.round(report.average_order_value).toLocaleString('en-LK')}`)
+    .line('.');
+
+  printer.bold(true).text("CATEGORY REVENUE:").newLine().bold(false);
+  report.sales_by_category.forEach(cat => {
+    printer.twoColumn(`${cat.category_name} (${cat.item_count})`, `Rs. ${cat.total_amount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+  });
+  printer.line('.');
+
+  printer.bold(true).text("PAYMENT BREAKDOWN:").newLine().bold(false);
+  report.sales_by_payment.forEach(p => {
+    printer.twoColumn(`${p.method} (${p.count})`, `Rs. ${p.total.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+  });
+  printer.line('-');
+
+  printer.twoColumn("Gross Sales Subtotal:", `Rs. ${report.total_gross_sales.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+  if (report.total_discount > 0) {
+    printer.twoColumn("Discounts Granted:", `- Rs. ${report.total_discount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+  }
+  if (report.total_service_charge > 0) {
+    printer.twoColumn("Service Charge (10%):", `Rs. ${report.total_service_charge.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+  }
+  if (report.total_tax > 0) {
+    printer.twoColumn("VAT / Tax (8%):", `Rs. ${report.total_tax.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+  }
+
+  printer.line('-');
+  printer.bold(true).doubleHeight(true);
+  printer.twoColumn("NET DAY REVENUE:", `Rs. ${report.total_net_sales.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+  printer.doubleHeight(false).bold(false);
+  printer.line('-');
+
+  printer.alignCenter()
+    .bold(true)
+    .text("*** END OF DAILY AUDIT RECORD ***")
+    .newLine()
+    .bold(false)
     .cut();
 
   return printer;

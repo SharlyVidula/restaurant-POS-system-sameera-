@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -151,6 +151,51 @@ app.whenReady().then(() => {
       return { success: true, output: stdout };
     } catch (e: any) {
       return { success: false, error: e.message };
+    }
+  });
+
+  // Save Non-Editable Official Audit Report to Computer Storage
+  ipcMain.handle('save-report-file', async (_event, data: { subfolder: string; filename: string; content: string }) => {
+    try {
+      const documentsPath = path.join(os.homedir(), 'Documents', 'SouthernSpoon_Reports', data.subfolder || 'General');
+      await fs.promises.mkdir(documentsPath, { recursive: true });
+      const targetFilePath = path.join(documentsPath, data.filename);
+
+      // Write file content (UTF-8)
+      await fs.promises.writeFile(targetFilePath, data.content, 'utf8');
+
+      // Set read-only attribute on Windows so it cannot be casually modified
+      try {
+        if (process.platform === 'win32') {
+          await execPromise(`attrib +R "${targetFilePath}"`);
+        } else {
+          fs.chmodSync(targetFilePath, 0o444);
+        }
+      } catch (attrErr) {
+        console.warn('Could not set read-only attribute', attrErr);
+      }
+
+      console.log('[Audit Report Saved]', targetFilePath);
+      return {
+        success: true,
+        filePath: targetFilePath,
+        message: `Saved official report to ${targetFilePath}`
+      };
+    } catch (err: any) {
+      console.error('[Save Report Error]', err);
+      return { success: false, error: err.message };
+    }
+  });
+
+  // Open Reports Folder in Windows File Explorer
+  ipcMain.handle('open-reports-folder', async (_event, subfolder?: string) => {
+    try {
+      const documentsPath = path.join(os.homedir(), 'Documents', 'SouthernSpoon_Reports', subfolder || '');
+      await fs.promises.mkdir(documentsPath, { recursive: true });
+      await shell.openPath(documentsPath);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
     }
   });
 

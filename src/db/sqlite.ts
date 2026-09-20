@@ -11,7 +11,9 @@ import {
   TableStatus, 
   PaymentMethod,
   CashTransaction,
-  PriceChangeAudit
+  PriceChangeAudit,
+  DailySalesReportData,
+  MonthlySalesReportData
 } from '../types';
 import { 
   INITIAL_CATEGORIES, 
@@ -498,6 +500,239 @@ class SQLiteLocalDatabase {
 
     this.persistAll();
     return zReport;
+  }
+
+  // --- SALES ANALYTICS & REPORTS ---
+  public parseOrderDate(order: { paid_at?: string; created_at?: string; id?: number }): string {
+    if (order.paid_at) {
+      const parts = order.paid_at.split(' ')[0].split('/');
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      }
+    }
+    if (order.created_at) {
+      const parts = order.created_at.split(' ')[0].split('/');
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      }
+    }
+    if (order.id && order.id > 1600000000000) {
+      const d = new Date(order.id);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  }
+
+  public getDailySalesReport(dateStr?: string): DailySalesReportData {
+    const targetDate = dateStr || this.parseOrderDate({ id: Date.now() });
+    const dayOrders = this.orders.filter(o => o.payment_status === 'paid' && this.parseOrderDate(o) === targetDate);
+
+    let totalGrossSales = 0;
+    let totalDiscount = 0;
+    let totalNetSales = 0;
+    let totalTax = 0;
+    let totalServiceCharge = 0;
+    let totalItemsSold = 0;
+
+    const catMap = new Map<string, { count: number; total: number }>();
+    const itemMap = new Map<string, { count: number; revenue: number }>();
+    const paymentMap = new Map<string, { count: number; total: number }>();
+
+    dayOrders.forEach(o => {
+      const gross = o.subtotal || o.total_amount;
+      totalGrossSales += gross;
+      totalDiscount += (o.discount_amount || 0);
+      totalNetSales += o.total_amount;
+      totalTax += (o.tax_amount || 0);
+      totalServiceCharge += (o.service_charge || 0);
+
+      const method = (o.payment_method || 'cash').toUpperCase();
+      const currentPay = paymentMap.get(method) || { count: 0, total: 0 };
+      currentPay.count += 1;
+      currentPay.total += o.total_amount;
+      paymentMap.set(method, currentPay);
+
+      o.items.forEach(item => {
+        totalItemsSold += item.quantity;
+        const menuItem = this.menuItems.find(m => m.id === item.menu_item_id);
+        const category = menuItem ? this.categories.find(c => c.id === menuItem.category_id)?.name || 'Other' : 'Other';
+
+        const currCat = catMap.get(category) || { count: 0, total: 0 };
+        currCat.count += item.quantity;
+        currCat.total += item.total_price;
+        catMap.set(category, currCat);
+
+        const currItem = itemMap.get(item.item_name) || { count: 0, revenue: 0 };
+        currItem.count += item.quantity;
+        currItem.revenue += item.total_price;
+        itemMap.set(item.item_name, currItem);
+      });
+    });
+
+    const sales_by_payment = Array.from(paymentMap.entries()).map(([method, data]) => ({
+      method,
+      count: data.count,
+      total: data.total,
+      percentage: totalNetSales > 0 ? Math.round((data.total / totalNetSales) * 100) : 0,
+    }));
+
+    const sales_by_category = Array.from(catMap.entries()).map(([category_name, data]) => ({
+      category_name,
+      item_count: data.count,
+      total_amount: data.total,
+      percentage: totalNetSales > 0 ? Math.round((data.total / totalNetSales) * 100) : 0,
+    })).sort((a, b) => b.total_amount - a.total_amount);
+
+    const top_selling_items = Array.from(itemMap.entries())
+      .map(([item_name, data]) => ({
+        item_name,
+        quantity: data.count,
+        revenue: data.revenue,
+      }))
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 10);
+
+    const orderSummaries = dayOrders.map(o => ({
+      order_number: o.order_number,
+      time: (o.created_at || '').split(' ')[1] || o.created_at,
+      total: o.total_amount,
+      payment_method: (o.payment_method || 'cash').toUpperCase(),
+      items_count: o.items.reduce((s, i) => s + i.quantity, 0),
+      table: o.table_number,
+    }));
+
+    return {
+      date: targetDate,
+      generated_at: new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString(),
+      order_count: dayOrders.length,
+      total_gross_sales: totalGrossSales,
+      total_discount: totalDiscount,
+      total_net_sales: totalNetSales,
+      total_tax: totalTax,
+      total_service_charge: totalServiceCharge,
+      total_items_sold: totalItemsSold,
+      average_order_value: dayOrders.length > 0 ? totalNetSales / dayOrders.length : 0,
+      sales_by_payment,
+      sales_by_category,
+      top_selling_items,
+      orders: orderSummaries,
+    };
+  }
+
+  public getMonthlySalesReport(yearParam?: number, monthParam?: number): MonthlySalesReportData {
+    const now = new Date();
+    const year = yearParam || now.getFullYear();
+    const month = monthParam !== undefined ? monthParam : (now.getMonth() + 1);
+    const monthPrefix = `${year}-${String(month).padStart(2, '0')}`;
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+
+    const monthOrders = this.orders.filter(o => o.payment_status === 'paid' && this.parseOrderDate(o).startsWith(monthPrefix));
+
+    let totalGrossSales = 0;
+    let totalDiscount = 0;
+    let totalNetSales = 0;
+    let totalTax = 0;
+    let totalServiceCharge = 0;
+    let totalItemsSold = 0;
+
+    const catMap = new Map<string, { count: number; total: number }>();
+    const paymentMap = new Map<string, { count: number; total: number }>();
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const dailyMap = new Map<number, { orders: number; cash: number; card: number; qr: number; total: number }>();
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      dailyMap.set(d, { orders: 0, cash: 0, card: 0, qr: 0, total: 0 });
+    }
+
+    const activeDaysSet = new Set<string>();
+
+    monthOrders.forEach(o => {
+      const dateStr = this.parseOrderDate(o);
+      activeDaysSet.add(dateStr);
+      const dayNum = parseInt(dateStr.split('-')[2], 10);
+
+      const gross = o.subtotal || o.total_amount;
+      totalGrossSales += gross;
+      totalDiscount += (o.discount_amount || 0);
+      totalNetSales += o.total_amount;
+      totalTax += (o.tax_amount || 0);
+      totalServiceCharge += (o.service_charge || 0);
+
+      const method = (o.payment_method || 'cash').toLowerCase();
+      const currentPay = paymentMap.get(method.toUpperCase()) || { count: 0, total: 0 };
+      currentPay.count += 1;
+      currentPay.total += o.total_amount;
+      paymentMap.set(method.toUpperCase(), currentPay);
+
+      if (dailyMap.has(dayNum)) {
+        const dayRecord = dailyMap.get(dayNum)!;
+        dayRecord.orders += 1;
+        dayRecord.total += o.total_amount;
+        if (method === 'cash') dayRecord.cash += o.total_amount;
+        else if (method === 'card') dayRecord.card += o.total_amount;
+        else if (method === 'qr') dayRecord.qr += o.total_amount;
+      }
+
+      o.items.forEach(item => {
+        totalItemsSold += item.quantity;
+        const menuItem = this.menuItems.find(m => m.id === item.menu_item_id);
+        const category = menuItem ? this.categories.find(c => c.id === menuItem.category_id)?.name || 'Other' : 'Other';
+
+        const currCat = catMap.get(category) || { count: 0, total: 0 };
+        currCat.count += item.quantity;
+        currCat.total += item.total_price;
+        catMap.set(category, currCat);
+      });
+    });
+
+    const sales_by_payment = Array.from(paymentMap.entries()).map(([method, data]) => ({
+      method,
+      count: data.count,
+      total: data.total,
+      percentage: totalNetSales > 0 ? Math.round((data.total / totalNetSales) * 100) : 0,
+    }));
+
+    const sales_by_category = Array.from(catMap.entries()).map(([category_name, data]) => ({
+      category_name,
+      item_count: data.count,
+      total_amount: data.total,
+      percentage: totalNetSales > 0 ? Math.round((data.total / totalNetSales) * 100) : 0,
+    })).sort((a, b) => b.total_amount - a.total_amount);
+
+    const daily_breakdown = Array.from(dailyMap.entries()).map(([day, data]) => ({
+      date: `${monthPrefix}-${String(day).padStart(2, '0')}`,
+      day,
+      order_count: data.orders,
+      cash_total: data.cash,
+      card_total: data.card,
+      qr_total: data.qr,
+      total_sales: data.total,
+    }));
+
+    const activeDaysCount = Math.max(1, activeDaysSet.size);
+
+    return {
+      year,
+      month,
+      month_name: monthNames[month - 1] || `Month ${month}`,
+      generated_at: new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString(),
+      total_days_active: activeDaysSet.size,
+      total_orders: monthOrders.length,
+      total_gross_sales: totalGrossSales,
+      total_discount: totalDiscount,
+      total_net_sales: totalNetSales,
+      total_tax: totalTax,
+      total_service_charge: totalServiceCharge,
+      total_items_sold: totalItemsSold,
+      average_daily_sales: totalNetSales > 0 ? totalNetSales / activeDaysCount : 0,
+      sales_by_payment,
+      sales_by_category,
+      daily_breakdown,
+    };
   }
 }
 

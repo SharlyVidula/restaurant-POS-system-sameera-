@@ -14,6 +14,7 @@ import { HistoryModal } from './components/modals/HistoryModal';
 import { AdminAuthModal } from './components/modals/AdminAuthModal';
 import { CashPayoutModal } from './components/modals/CashPayoutModal';
 import { MenuPriceModal } from './components/modals/MenuPriceModal';
+import { SalesReportModal } from './components/modals/SalesReportModal';
 import { SplashScreen } from './components/common/SplashScreen';
 import { Sparkles, Utensils } from 'lucide-react';
 
@@ -35,6 +36,8 @@ export const App: React.FC = () => {
     isAdminAuthModalOpen,
     isCashPayoutModalOpen,
     isMenuPriceModalOpen,
+    isSalesReportModalOpen,
+    closeSalesReport,
   } = usePosStore();
 
   useEffect(() => {
@@ -119,6 +122,7 @@ export const App: React.FC = () => {
       {isAdminAuthModalOpen && <AdminAuthModal />}
       {isCashPayoutModalOpen && <CashPayoutModal />}
       {isMenuPriceModalOpen && <MenuPriceModal />}
+      <SalesReportModal isOpen={isSalesReportModalOpen} onClose={closeSalesReport} />
     </div>
   );
 };
