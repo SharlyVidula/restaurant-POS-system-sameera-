@@ -7,19 +7,21 @@ export const LF = 0x0A;
 
 export class EscPosBuilder {
   private buffer: number[] = [];
-  private width: 80 | 58 = 80;
-  private maxChars: number = 42; // standard 80mm = 42-48 cols, 58mm = 32 cols
+  private width: 80 = 80;
+  private maxChars: number = 42; // Standard 80mm printable columns
 
-  constructor(width: 80 | 58 = 80) {
-    this.width = width;
-    this.maxChars = width === 80 ? 42 : 32;
+  constructor(_width: number = 80) {
+    this.width = 80;
+    this.maxChars = 42;
     this.init();
-    this.centerPrintArea();
   }
 
   init(): this {
-    this.buffer.push(ESC, 0x40); // ESC @
-    this.buffer.push(ESC, 0x32); // ESC 2 (standard 1/6 inch line spacing)
+    this.buffer.push(ESC, 0x40); // ESC @ (Initialize printer)
+    this.buffer.push(ESC, 0x32); // ESC 2 (Standard 1/6 inch line spacing)
+    // 100% Full Width: Set Left Margin to 0 and Print Area Width to full 576 dots (72mm on 80mm roll)
+    this.buffer.push(GS, 0x4C, 0x00, 0x00); // GS L 0 0: 0px left margin
+    this.buffer.push(GS, 0x57, 0x40, 0x02); // GS W 576: 576 dots width (0x0240)
     return this;
   }
 
@@ -116,64 +118,26 @@ export class EscPosBuilder {
     return this;
   }
 
-  setLeftMargin(dots: number): this {
-    this.buffer.push(GS, 0x4C, dots % 256, Math.floor(dots / 256));
-    return this;
-  }
-
-  setPrintAreaWidth(dots: number): this {
-    this.buffer.push(GS, 0x57, dots % 256, Math.floor(dots / 256));
-    return this;
-  }
-
-  centerPrintArea(): this {
-    if (this.width === 80) {
-      // 80mm printable width is 576 dots total.
-      // 42 cols at ~10 dots/char = 424 dots.
-      // Centering margin: (576 - 424) / 2 = 76 dots (9.5mm).
-      this.setLeftMargin(76);
-      this.setPrintAreaWidth(424);
-    } else {
-      // 58mm printable width is 384 dots total.
-      // 32 cols at ~9 dots/char = 288 dots.
-      // Centering margin: (384 - 288) / 2 = 48 dots (6mm).
-      this.setLeftMargin(48);
-      this.setPrintAreaWidth(288);
-    }
-    return this;
-  }
-
-  resetPrintArea(): this {
-    this.setLeftMargin(0);
-    this.setPrintAreaWidth(this.width === 80 ? 576 : 384);
-    return this;
-  }
-
   logo(): this {
     try {
-      this.resetPrintArea(); // Ensure logo raster spans the full 576 dots with its precomputed symmetrical centering
-      const logoBytes = getLogoEscPosBytes(this.width);
+      const logoBytes = getLogoEscPosBytes(80);
       if (logoBytes && logoBytes.length > 0) {
         for (let i = 0; i < logoBytes.length; i++) {
           this.buffer.push(logoBytes[i]);
         }
-        this.newLine();
       }
-      this.centerPrintArea(); // Switch to centered text area for all subsequent receipt lines
     } catch (err) {
       console.warn('Failed to append ESC/POS logo bytes', err);
-      this.centerPrintArea();
     }
     return this;
   }
 
   cut(partial: boolean = false): this {
-    // 4 lines of physical LF feed advance the paper past the cutter knife
-    for (let i = 0; i < 4; i++) {
+    // 3 lines of physical LF feed advance paper just past cutter knife (~12.7mm)
+    for (let i = 0; i < 3; i++) {
       this.buffer.push(LF);
     }
     this.buffer.push(GS, 0x56, partial ? 0x01 : 0x00);
-    this.resetPrintArea();
     return this;
   }
 
@@ -252,23 +216,14 @@ export function buildCustomerReceiptEscPos(
     .line();
 
   // Table Headers
-  if (width === 80) {
-    printer.threeColumn("ITEM / DESCRIPTION", "QTY", "AMOUNT (LKR)");
-  } else {
-    printer.twoColumn("ITEM (QTY)", "AMOUNT");
-  }
+  printer.threeColumn("ITEM / DESCRIPTION", "QTY", "AMOUNT (LKR)");
   printer.line();
 
   // Items
   order.items.forEach(item => {
     const formattedName = item.variant_name ? `${item.item_name} (${item.variant_name})` : item.item_name;
     const priceStr = item.total_price.toLocaleString('en-LK', { minimumFractionDigits: 2 });
-
-    if (width === 80) {
-      printer.threeColumn(formattedName, `${item.quantity}x`, priceStr);
-    } else {
-      printer.twoColumn(`${item.quantity}x ${formattedName}`, priceStr);
-    }
+    printer.threeColumn(formattedName, `${item.quantity}x`, priceStr);
 
     if (item.notes) {
       printer.text(`   * Note: ${item.notes}`).newLine();
@@ -378,23 +333,14 @@ export function buildBillEscPos(
     .line();
 
   // Table Headers
-  if (width === 80) {
-    printer.threeColumn("ITEM / DESCRIPTION", "QTY", "AMOUNT (LKR)");
-  } else {
-    printer.twoColumn("ITEM (QTY)", "AMOUNT");
-  }
+  printer.threeColumn("ITEM / DESCRIPTION", "QTY", "AMOUNT (LKR)");
   printer.line();
 
   // Items
   order.items.forEach(item => {
     const formattedName = item.variant_name ? `${item.item_name} (${item.variant_name})` : item.item_name;
     const priceStr = item.total_price.toLocaleString('en-LK', { minimumFractionDigits: 2 });
-
-    if (width === 80) {
-      printer.threeColumn(formattedName, `${item.quantity}x`, priceStr);
-    } else {
-      printer.twoColumn(`${item.quantity}x ${formattedName}`, priceStr);
-    }
+    printer.threeColumn(formattedName, `${item.quantity}x`, priceStr);
 
     if (item.notes) {
       printer.text(`   * Note: ${item.notes}`).newLine();

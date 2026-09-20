@@ -3,13 +3,8 @@ import { usePosStore } from '../../store/posStore';
 import { 
   X, 
   Printer, 
-  Binary, 
-  FileText, 
-  Copy, 
-  Check, 
   Receipt,
   Send,
-  Sparkles,
   ClipboardList
 } from 'lucide-react';
 import { buildCustomerReceiptEscPos, buildKotEscPos, buildBillEscPos } from '../../utils/escpos';
@@ -17,9 +12,6 @@ import thermalLogo from '../../assets/thermal_logo.png';
 
 export const PrintPreviewModal: React.FC = () => {
   const { printPreview, closePrintPreview, restaurant } = usePosStore();
-  const [activeTab, setActiveTab] = useState<'visual' | 'hexdump'>('visual');
-  const [copied, setCopied] = useState(false);
-  const [paperWidth, setPaperWidth] = useState<80 | 58>(printPreview?.width || 80);
   const [currentSlipType, setCurrentSlipType] = useState<'RECEIPT' | 'KOT' | 'BILL' | 'X_REPORT' | 'Z_REPORT' | 'PAYOUT_VOUCHER'>(
     printPreview?.type || 'RECEIPT'
   );
@@ -33,11 +25,11 @@ export const PrintPreviewModal: React.FC = () => {
   const zReportData = printPreview.zReportData;
   const payoutData = printPreview.payoutData;
 
-  // Dynamically calculate ESC/POS Hex Dump based on selected slip type and paper width
+  // Dynamically calculate ESC/POS payload for 80mm thermal roll
   const currentHexDump = useMemo(() => {
     if (order) {
       if (currentSlipType === 'RECEIPT') {
-        return buildCustomerReceiptEscPos(order, restaurant, paperWidth).getHexDump();
+        return buildCustomerReceiptEscPos(order, restaurant, 80).getHexDump();
       } else if (currentSlipType === 'KOT') {
         return buildKotEscPos(
           order.order_number,
@@ -45,10 +37,10 @@ export const PrintPreviewModal: React.FC = () => {
           order.table_number,
           order.items,
           order.cashier_name,
-          paperWidth
+          80
         ).getHexDump();
       } else if (currentSlipType === 'BILL') {
-        return buildBillEscPos(order, restaurant, paperWidth).getHexDump();
+        return buildBillEscPos(order, restaurant, 80).getHexDump();
       }
     } else if (kotData && currentSlipType === 'KOT') {
       return buildKotEscPos(
@@ -57,17 +49,11 @@ export const PrintPreviewModal: React.FC = () => {
         kotData.tableNumber,
         kotData.items,
         kotData.cashierName,
-        paperWidth
+        80
       ).getHexDump();
     }
     return printPreview.hexDump;
-  }, [order, kotData, currentSlipType, restaurant, paperWidth, printPreview.hexDump]);
-
-  const copyHex = () => {
-    navigator.clipboard.writeText(currentHexDump);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  }, [order, kotData, currentSlipType, restaurant, printPreview.hexDump]);
 
   const handlePrint = async () => {
     setPrintSuccessNotice(true);
@@ -125,7 +111,7 @@ export const PrintPreviewModal: React.FC = () => {
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
-                Thermal Printer Emulator ({paperWidth}mm Roll)
+                80mm Thermal Receipt Slip
               </p>
             </div>
           </div>
@@ -184,63 +170,14 @@ export const PrintPreviewModal: React.FC = () => {
           </div>
         )}
 
-        {/* View Switcher Tabs & Width controls */}
-        <div className="px-5 py-2.5 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab('visual')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all border ${
-                activeTab === 'visual'
-                  ? 'bg-amber-500 text-slate-950 border-amber-400'
-                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Thermal Paper Preview</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('hexdump')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all border ${
-                activeTab === 'hexdump'
-                  ? 'bg-amber-500 text-slate-950 border-amber-400'
-                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
-              }`}
-            >
-              <Binary className="w-3.5 h-3.5" />
-              <span>ESC/POS Hex Dump</span>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
-            <button
-              onClick={() => setPaperWidth(80)}
-              className={`px-2 py-0.5 rounded text-[11px] font-bold font-mono transition-all ${
-                paperWidth === 80 ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              80mm
-            </button>
-            <button
-              onClick={() => setPaperWidth(58)}
-              className={`px-2 py-0.5 rounded text-[11px] font-bold font-mono transition-all ${
-                paperWidth === 58 ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              58mm
-            </button>
-          </div>
-        </div>
-
         {/* Content View */}
         <div className="p-6 overflow-y-auto flex-1 bg-slate-950/40 flex justify-center items-start scrollbar-thin scrollbar-thumb-slate-800">
-          {activeTab === 'visual' ? (
-            /* Realistic Thermal Paper Roll */
-            <div
-              id="thermal-printable-slip"
-              style={{ width: paperWidth === 80 ? '380px' : '290px' }}
-              className="bg-[#fcfaf2] text-[#111] px-5 py-3.5 shadow-receipt rounded-sm font-mono text-[11px] leading-relaxed relative select-text border border-amber-900/10 h-auto min-h-fit self-start"
-            >
+          {/* Realistic Thermal Paper Roll */}
+          <div
+            id="thermal-printable-slip"
+            style={{ width: '380px' }}
+            className="bg-[#fcfaf2] text-[#111] px-5 py-3.5 shadow-receipt rounded-sm font-mono text-[11px] leading-relaxed relative select-text border border-amber-900/10 h-auto min-h-fit self-start"
+          >
               {/* Paper Jagged Top Tear Effect */}
               <div className="tear-effect absolute top-0 left-0 right-0 h-2 bg-[radial-gradient(circle,transparent_4px,#fcfaf2_4px)] bg-[length:12px_12px] -mt-1 pointer-events-none" />
 
@@ -726,26 +663,6 @@ export const PrintPreviewModal: React.FC = () => {
               {/* Paper Jagged Bottom Tear Effect */}
               <div className="tear-effect absolute -bottom-2 left-0 right-0 h-2 bg-[radial-gradient(circle,transparent_4px,#fcfaf2_4px)] bg-[length:12px_12px] rotate-180 pointer-events-none" />
             </div>
-          ) : (
-            /* Hex Dump Inspector */
-            <div className="w-full bg-slate-950 p-4 rounded-2xl border border-slate-800 font-mono text-xs text-emerald-400 overflow-x-auto select-text">
-              <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
-                <span className="text-slate-400 font-bold text-[11px] uppercase">
-                  ESC/POS Binary Buffer (Hexadecimal representation)
-                </span>
-                <button
-                  onClick={copyHex}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 text-[11px] transition-all"
-                >
-                  {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                  <span>{copied ? 'Copied' : 'Copy Hex'}</span>
-                </button>
-              </div>
-              <pre className="whitespace-pre-wrap break-all leading-relaxed text-slate-300">
-                {currentHexDump}
-              </pre>
-            </div>
-          )}
         </div>
 
         {/* Footer Actions */}
