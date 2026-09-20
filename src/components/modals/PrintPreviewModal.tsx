@@ -217,8 +217,7 @@ export const PrintPreviewModal: React.FC = () => {
                       <span>Date: {order.created_at}</span>
                       <span>{order.table_number ? `Table: ${order.table_number}` : 'Takeaway'}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Cashier: {order.cashier_name}</span>
+                    <div className="flex justify-end">
                       <span className="font-bold text-emerald-800 uppercase">Paid: {order.payment_method?.toUpperCase()}</span>
                     </div>
                     {order.customer_name && (
@@ -343,8 +342,7 @@ export const PrintPreviewModal: React.FC = () => {
                         ? `TABLE: ${kotData.tableNumber}` 
                         : `TYPE: ${(order?.order_type || kotData?.orderType || 'TAKEAWAY').toUpperCase()}`}
                     </div>
-                    <div className="flex justify-between text-[10px] text-gray-600 mt-1">
-                      <span>Server: {order?.cashier_name || kotData?.cashierName}</span>
+                    <div className="text-center text-[10px] text-gray-600 mt-1">
                       <span>Time: {order?.created_at || kotData?.createdAt || new Date().toLocaleTimeString()}</span>
                     </div>
                     <div className="border-b-2 border-dashed border-gray-900 my-2" />
@@ -415,7 +413,7 @@ export const PrintPreviewModal: React.FC = () => {
                     </div>
                     <div className="flex justify-between">
                       <span>Date: {order.created_at}</span>
-                      <span>Server: {order.cashier_name}</span>
+                      <span>{order.table_number ? `Type: ${order.order_type.toUpperCase()}` : ''}</span>
                     </div>
                     <div className="border-b border-dashed border-gray-800 my-1.5" />
                   </div>

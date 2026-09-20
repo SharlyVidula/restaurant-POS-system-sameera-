@@ -220,7 +220,7 @@ export function buildCustomerReceiptEscPos(
     .twoColumn(`Order: #${order.order_number}`, `Type: ${order.order_type.toUpperCase()}`)
     .bold(false)
     .twoColumn(`Date: ${order.created_at}`, order.table_number ? `Table: ${order.table_number}` : 'Takeaway')
-    .twoColumn(`Cashier: ${order.cashier_name}`, `PAID: ${(order.payment_method || 'CASH').toUpperCase()}`);
+    .twoColumn("", `PAID: ${(order.payment_method || 'CASH').toUpperCase()}`);
 
   if (order.customer_name) {
     printer.text(`Customer: ${order.customer_name} ${order.customer_phone ? `(${order.customer_phone})` : ''}`).newLine();
@@ -347,7 +347,7 @@ export function buildBillEscPos(
     .bold(true)
     .twoColumn(`Order: #${order.order_number}`, order.table_number ? `Table: ${order.table_number}` : `Type: ${order.order_type.toUpperCase()}`)
     .bold(false)
-    .twoColumn(`Date: ${order.created_at}`, `Server: ${order.cashier_name}`)
+    .twoColumn(`Date: ${order.created_at}`, order.table_number ? `Type: ${order.order_type.toUpperCase()}` : '')
     .line('.');
 
   // Table Headers
@@ -435,7 +435,7 @@ export function buildKotEscPos(
     .twoColumn(`Order: #${orderNumber}`, tableNumber ? `TABLE: ${tableNumber}` : `TYPE: ${orderType.toUpperCase()}`)
     .doubleHeight(false)
     .bold(false)
-    .twoColumn(`Time: ${new Date().toLocaleTimeString()}`, `Cashier: ${cashierName}`)
+    .twoColumn(`Time: ${new Date().toLocaleTimeString()}`, "")
     .line('-');
 
   // KOT Items
