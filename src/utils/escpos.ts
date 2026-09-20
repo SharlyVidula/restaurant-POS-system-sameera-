@@ -190,6 +190,7 @@ export function buildCustomerReceiptEscPos(
 
   // Header
   printer.logo()
+    .newLine()
     .alignCenter()
     .bold(false)
     .text("Labuduwa")
@@ -304,6 +305,7 @@ export function buildBillEscPos(
 
   // Header
   printer.logo()
+    .newLine()
     .alignCenter()
     .bold(false)
     .text("Labuduwa")

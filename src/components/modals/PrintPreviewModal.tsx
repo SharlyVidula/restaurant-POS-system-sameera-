@@ -186,7 +186,7 @@ export const PrintPreviewModal: React.FC = () => {
                 /* --- DYNAMIC CUSTOMER RECEIPT --- */
                 <div>
                   <div className="text-center space-y-0.5 pb-2 flex flex-col items-center">
-                    <div className="mb-1 flex justify-center">
+                    <div className="mb-2.5 flex justify-center">
                       <img 
                         src={thermalLogo} 
                         alt={restaurant.name} 
@@ -372,7 +372,7 @@ export const PrintPreviewModal: React.FC = () => {
                 /* --- DYNAMIC GUEST CHECK / BILL --- */
                 <div>
                   <div className="text-center space-y-0.5 pb-2 flex flex-col items-center">
-                    <div className="mb-1 flex justify-center">
+                    <div className="mb-2.5 flex justify-center">
                       <img 
                         src={thermalLogo} 
                         alt={restaurant.name} 
