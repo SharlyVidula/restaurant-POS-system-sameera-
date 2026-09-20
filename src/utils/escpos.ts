@@ -8,11 +8,11 @@ export const LF = 0x0A;
 export class EscPosBuilder {
   private buffer: number[] = [];
   private width: 80 = 80;
-  private maxChars: number = 42; // Standard 80mm printable columns
+  private maxChars: number = 48; // Standard 80mm Font A (576 dots / 12 dots = 48 cols)
 
   constructor(_width: number = 80) {
     this.width = 80;
-    this.maxChars = 42;
+    this.maxChars = 48;
     this.init();
   }
 
@@ -42,6 +42,11 @@ export class EscPosBuilder {
 
   bold(enable: boolean = true): this {
     this.buffer.push(ESC, 0x45, enable ? 0x01 : 0x00);
+    return this;
+  }
+
+  fontB(enable: boolean = true): this {
+    this.buffer.push(ESC, 0x4D, enable ? 0x01 : 0x00); // ESC M 1 (Font B 9x17, 64 cols) / 0 (Font A 12x24, 48 cols)
     return this;
   }
 
@@ -109,7 +114,7 @@ export class EscPosBuilder {
     return this;
   }
 
-  threeColumn(col1: string, col2: string, col3: string, col1Width: number = 22, col2Width: number = 6): this {
+  threeColumn(col1: string, col2: string, col3: string, col1Width: number = 24, col2Width: number = 6): this {
     const c1 = col1.padEnd(col1Width).slice(0, col1Width);
     const c2 = col2.padStart(col2Width).slice(0, col2Width);
     const rem = this.maxChars - col1Width - col2Width;
@@ -133,8 +138,9 @@ export class EscPosBuilder {
   }
 
   cut(partial: boolean = false): this {
-    // 3 lines of physical LF feed advance paper just past cutter knife (~12.7mm)
-    for (let i = 0; i < 3; i++) {
+    // 6 lines of physical LF feed advance paper well past cutter knife (~25.4mm)
+    // so the final footer text is NEVER cut in half!
+    for (let i = 0; i < 6; i++) {
       this.buffer.push(LF);
     }
     this.buffer.push(GS, 0x56, partial ? 0x01 : 0x00);
@@ -178,7 +184,7 @@ export class EscPosBuilder {
 export function buildCustomerReceiptEscPos(
   order: Order,
   restaurant: RestaurantProfile,
-  width: 80 | 58 = 80
+  width: number = 80
 ): EscPosBuilder {
   const printer = new EscPosBuilder(width);
 
@@ -194,7 +200,7 @@ export function buildCustomerReceiptEscPos(
   if (restaurant.branch && 
       restaurant.branch.toLowerCase().trim() !== restaurant.address.toLowerCase().trim() &&
       !restaurant.address.toLowerCase().includes(restaurant.branch.toLowerCase().trim())) {
-    printer.text(restaurant.branch).newLine();
+    printer.bold(true).text(restaurant.branch).newLine().bold(false);
   }
 
   printer.bold(false)
@@ -206,35 +212,45 @@ export function buildCustomerReceiptEscPos(
     .newLine()
     .text(restaurant.tax_number)
     .newLine()
-    .doubleLine();
+    .line('-');
 
   // Order Details
   printer.alignLeft()
+    .bold(true)
     .twoColumn(`Order: #${order.order_number}`, `Type: ${order.order_type.toUpperCase()}`)
+    .bold(false)
     .twoColumn(`Date: ${order.created_at}`, order.table_number ? `Table: ${order.table_number}` : 'Takeaway')
-    .twoColumn(`Cashier: ${order.cashier_name}`, `Status: ${order.payment_status.toUpperCase()}`)
-    .line();
+    .twoColumn(`Cashier: ${order.cashier_name}`, `PAID: ${(order.payment_method || 'CASH').toUpperCase()}`);
+
+  if (order.customer_name) {
+    printer.text(`Customer: ${order.customer_name} ${order.customer_phone ? `(${order.customer_phone})` : ''}`).newLine();
+  }
+
+  printer.line('.');
 
   // Table Headers
-  printer.threeColumn("ITEM / DESCRIPTION", "QTY", "AMOUNT (LKR)");
-  printer.line();
+  printer.bold(true)
+    .twoColumn("DESCRIPTION", "AMOUNT")
+    .bold(false);
 
   // Items
   order.items.forEach(item => {
     const formattedName = item.variant_name ? `${item.item_name} (${item.variant_name})` : item.item_name;
-    const priceStr = item.total_price.toLocaleString('en-LK', { minimumFractionDigits: 2 });
-    printer.threeColumn(formattedName, `${item.quantity}x`, priceStr);
+    const itemLeft = `${item.quantity}x ${formattedName}`;
+    const priceStr = `Rs. ${item.total_price.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`;
+    printer.bold(true).twoColumn(itemLeft, priceStr).bold(false);
 
     if (item.notes) {
-      printer.text(`   * Note: ${item.notes}`).newLine();
+      printer.text(`  * Note: ${item.notes}`).newLine();
     }
   });
 
-  printer.line();
+  printer.line('-');
 
   // Totals & Financials
-  printer.alignRight();
-  printer.twoColumn("Subtotal:", `Rs. ${order.subtotal.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+  printer.bold(true)
+    .twoColumn("SUBTOTAL:", `Rs. ${order.subtotal.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`)
+    .bold(false);
 
   if (order.discount_amount > 0) {
     printer.twoColumn(`Discount (${order.discount_percentage || 0}%):`, `- Rs. ${order.discount_amount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
@@ -248,45 +264,40 @@ export function buildCustomerReceiptEscPos(
     printer.twoColumn("VAT (8%):", `Rs. ${order.tax_amount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
   }
 
-  printer.doubleLine();
+  printer.line('-');
   printer.bold(true).doubleHeight(true);
   printer.twoColumn("TOTAL NET:", `Rs. ${order.total_amount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
   printer.doubleHeight(false).bold(false);
-  printer.line();
 
   // Payment Breakdown
   if (order.payment_method === 'cash') {
-    printer.twoColumn("Payment Method:", "CASH (LKR)");
-    if (order.cash_tendered) {
-      printer.twoColumn("Cash Tendered:", `Rs. ${order.cash_tendered.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
-      printer.bold(true);
-      printer.twoColumn("Change Returned:", `Rs. ${(order.change_returned || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
-      printer.bold(false);
-    }
+    const tendered = order.cash_tendered !== undefined ? order.cash_tendered : order.total_amount;
+    printer.twoColumn("CASH TENDERED:", `Rs. ${tendered.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+    printer.bold(true);
+    printer.twoColumn("CHANGE RETURNED:", `Rs. ${(order.change_returned || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+    printer.bold(false);
   } else if (order.payment_method === 'card') {
-    printer.twoColumn("Payment Method:", "CREDIT/DEBIT CARD");
     if (order.card_reference) {
-      printer.twoColumn("Approval Ref:", order.card_reference);
+      printer.twoColumn("Card Approval Ref:", order.card_reference);
     }
   } else if (order.payment_method === 'qr') {
-    printer.twoColumn("Payment Method:", "LankaQR / Dynamic QR");
     if (order.qr_reference) {
-      printer.twoColumn("Txn Ref:", order.qr_reference);
+      printer.twoColumn("LankaQR Txn Ref:", order.qr_reference);
     }
   }
 
   // Footer & Wifi
-  printer.line()
+  printer.line('-')
     .alignCenter()
-    .text(`Free WiFi: ${restaurant.wifi_ssid}`)
+    .fontB(true)
+    .text(`WiFi: ${restaurant.wifi_ssid} | Pass: ${restaurant.wifi_pass}`)
     .newLine()
-    .text(`Password: ${restaurant.wifi_pass}`)
-    .newLine()
+    .fontB(false)
     .bold(true)
     .text(restaurant.footer_message)
     .newLine()
     .bold(false)
-    .text("*** Have a wonderful day in Galle ***")
+    .text("*** Authentic Southern Ceylon Taste ***")
     .newLine()
     .cut();
 
@@ -299,7 +310,7 @@ export function buildCustomerReceiptEscPos(
 export function buildBillEscPos(
   order: Order,
   restaurant: RestaurantProfile,
-  width: 80 | 58 = 80
+  width: number = 80
 ): EscPosBuilder {
   const printer = new EscPosBuilder(width);
 
@@ -315,43 +326,53 @@ export function buildBillEscPos(
   if (restaurant.branch && 
       restaurant.branch.toLowerCase().trim() !== restaurant.address.toLowerCase().trim() &&
       !restaurant.address.toLowerCase().includes(restaurant.branch.toLowerCase().trim())) {
-    printer.text(restaurant.branch).newLine();
+    printer.bold(true).text(restaurant.branch).newLine().bold(false);
   }
 
-  printer.bold(true)
+  printer.bold(false)
+    .text(restaurant.address)
+    .newLine()
+    .text(restaurant.city)
+    .newLine()
+    .bold(true)
     .text("=== GUEST CHECK / PROFORMA BILL ===")
     .newLine()
     .bold(false)
-    .text("*** NOT A TAX RECEIPT - PENDING PAYMENT ***")
+    .text("*** NOT A TAX RECEIPT - PENDING SETTLEMENT ***")
     .newLine()
-    .doubleLine();
+    .line('-');
 
   // Order Details
   printer.alignLeft()
+    .bold(true)
     .twoColumn(`Order: #${order.order_number}`, order.table_number ? `Table: ${order.table_number}` : `Type: ${order.order_type.toUpperCase()}`)
+    .bold(false)
     .twoColumn(`Date: ${order.created_at}`, `Server: ${order.cashier_name}`)
-    .line();
+    .line('.');
 
   // Table Headers
-  printer.threeColumn("ITEM / DESCRIPTION", "QTY", "AMOUNT (LKR)");
-  printer.line();
+  printer.bold(true)
+    .twoColumn("ITEM", "AMOUNT")
+    .bold(false);
 
   // Items
   order.items.forEach(item => {
     const formattedName = item.variant_name ? `${item.item_name} (${item.variant_name})` : item.item_name;
-    const priceStr = item.total_price.toLocaleString('en-LK', { minimumFractionDigits: 2 });
-    printer.threeColumn(formattedName, `${item.quantity}x`, priceStr);
+    const itemLeft = `${item.quantity}x ${formattedName}`;
+    const priceStr = `Rs. ${item.total_price.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`;
+    printer.bold(true).twoColumn(itemLeft, priceStr).bold(false);
 
     if (item.notes) {
-      printer.text(`   * Note: ${item.notes}`).newLine();
+      printer.text(`  * Note: ${item.notes}`).newLine();
     }
   });
 
-  printer.line();
+  printer.line('-');
 
   // Totals
-  printer.alignRight();
-  printer.twoColumn("Subtotal:", `Rs. ${order.subtotal.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
+  printer.bold(true)
+    .twoColumn("Subtotal:", `Rs. ${order.subtotal.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`)
+    .bold(false);
 
   if (order.discount_amount > 0) {
     printer.twoColumn(`Discount (${order.discount_percentage || 0}%):`, `- Rs. ${order.discount_amount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
@@ -365,17 +386,19 @@ export function buildBillEscPos(
     printer.twoColumn("VAT (8%):", `Rs. ${order.tax_amount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
   }
 
-  printer.doubleLine();
+  printer.line('-');
   printer.bold(true).doubleHeight(true);
   printer.twoColumn("TOTAL PAYABLE:", `Rs. ${order.total_amount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`);
   printer.doubleHeight(false).bold(false);
-  printer.line();
 
-  printer.alignCenter()
-    .text("Please present this bill at the cashier desk")
+  printer.line('-')
+    .alignCenter()
+    .text("Please present this slip at the cashier counter.")
     .newLine()
-    .text("Cash, Credit/Debit Cards & LankaQR accepted")
+    .bold(true)
+    .text("Cash, Visa, Mastercard & LankaQR accepted")
     .newLine()
+    .bold(false)
     .cut();
 
   return printer;
@@ -390,7 +413,7 @@ export function buildKotEscPos(
   tableNumber: string | undefined,
   items: (OrderItem | { item_name: string; variant_name?: string; quantity: number; notes?: string; station?: string })[],
   cashierName: string,
-  width: 80 | 58 = 80
+  width: number = 80
 ): EscPosBuilder {
   const printer = new EscPosBuilder(width);
 
@@ -413,7 +436,7 @@ export function buildKotEscPos(
     .doubleHeight(false)
     .bold(false)
     .twoColumn(`Time: ${new Date().toLocaleTimeString()}`, `Cashier: ${cashierName}`)
-    .doubleLine();
+    .line('-');
 
   // KOT Items
   items.forEach((item, idx) => {
@@ -435,7 +458,14 @@ export function buildKotEscPos(
     printer.line('.');
   });
 
-  printer.alignCenter()
+  const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
+
+  printer.line('-')
+    .alignCenter()
+    .bold(true)
+    .text(`Total Items: ${totalQty}`)
+    .newLine()
+    .bold(false)
     .text("--- DISPATCH TO STATION ---")
     .newLine()
     .cut();
