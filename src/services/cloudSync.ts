@@ -1,6 +1,8 @@
 import { posDatabase } from '../db/sqlite';
 import { DailySalesReportData, MonthlySalesReportData } from '../types';
 
+export const DEFAULT_CLOUD_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxSAOlCD3EkPY7dExpk-ZJESJSaL7BbmUvUZc5pYqGdxXmuH2ZRH5rDaM_yYPMAszemZw/exec';
+
 export interface CloudSyncStatus {
   isOnline: boolean;
   lastSyncTime: string | null;
@@ -117,9 +119,9 @@ class CloudSyncService {
 
     try {
       const payload = this.generateSyncPayload();
-      
-      // Optional configured webhook / cloud endpoint from localStorage
-      const cloudEndpoint = typeof window !== 'undefined' ? localStorage.getItem('southern_spoon_cloud_endpoint') : null;
+
+      // Cloud endpoint (custom or default Google Sheets web app)
+      const cloudEndpoint = this.getCloudEndpoint();
 
       if (cloudEndpoint && cloudEndpoint.startsWith('http')) {
         const isGoogleScript = cloudEndpoint.includes('script.google.com');
@@ -166,7 +168,7 @@ class CloudSyncService {
 
   public setCloudEndpoint(url: string): void {
     if (typeof window !== 'undefined') {
-      if (url) {
+      if (url && url !== DEFAULT_CLOUD_ENDPOINT) {
         localStorage.setItem('southern_spoon_cloud_endpoint', url);
       } else {
         localStorage.removeItem('southern_spoon_cloud_endpoint');
@@ -176,10 +178,12 @@ class CloudSyncService {
 
   public getCloudEndpoint(): string {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('southern_spoon_cloud_endpoint') || '';
+      const custom = localStorage.getItem('southern_spoon_cloud_endpoint');
+      if (custom) return custom;
     }
-    return '';
+    return DEFAULT_CLOUD_ENDPOINT;
   }
 }
 
 export const cloudSyncService = new CloudSyncService();
+

@@ -29,6 +29,7 @@ import {
   buildBillEscPos,
   buildPayoutVoucherEscPos
 } from '../utils/escpos';
+import { cloudSyncService } from '../services/cloudSync';
 
 export interface PrintPreviewData {
   title: string;
@@ -533,6 +534,11 @@ export const usePosStore = create<PosState>((set, get) => ({
         width: 80,
         order: savedOrder,
       }
+    });
+
+    // Trigger cloud sync in background for real-time remote sales monitoring (non-blocking)
+    cloudSyncService.triggerSync(`Order #${savedOrder.order_number}`).catch(err => {
+      console.warn('[CloudSync] Auto-sync notice:', err);
     });
 
     return savedOrder;
