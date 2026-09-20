@@ -191,22 +191,10 @@ export function buildCustomerReceiptEscPos(
   // Header
   printer.logo()
     .alignCenter()
-    .bold(true)
-    .doubleSize(true)
-    .text(restaurant.name)
+    .bold(false)
+    .text("Labuduwa")
     .newLine()
-    .doubleSize(false);
-
-  if (restaurant.branch && 
-      restaurant.branch.toLowerCase().trim() !== restaurant.address.toLowerCase().trim() &&
-      !restaurant.address.toLowerCase().includes(restaurant.branch.toLowerCase().trim())) {
-    printer.bold(true).text(restaurant.branch).newLine().bold(false);
-  }
-
-  printer.bold(false)
-    .text(restaurant.address)
-    .newLine()
-    .text(restaurant.city)
+    .text("Galle, Sri Lanka")
     .newLine()
     .text(`Hotline: ${restaurant.hotline}`)
     .newLine()
@@ -317,22 +305,10 @@ export function buildBillEscPos(
   // Header
   printer.logo()
     .alignCenter()
-    .bold(true)
-    .doubleSize(true)
-    .text(restaurant.name)
+    .bold(false)
+    .text("Labuduwa")
     .newLine()
-    .doubleSize(false);
-
-  if (restaurant.branch && 
-      restaurant.branch.toLowerCase().trim() !== restaurant.address.toLowerCase().trim() &&
-      !restaurant.address.toLowerCase().includes(restaurant.branch.toLowerCase().trim())) {
-    printer.bold(true).text(restaurant.branch).newLine().bold(false);
-  }
-
-  printer.bold(false)
-    .text(restaurant.address)
-    .newLine()
-    .text(restaurant.city)
+    .text("Galle, Sri Lanka")
     .newLine()
     .bold(true)
     .text("=== GUEST CHECK / PROFORMA BILL ===")

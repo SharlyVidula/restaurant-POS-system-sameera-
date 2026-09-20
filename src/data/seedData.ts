@@ -1,7 +1,7 @@
 import { Category, MenuItem, DiningTable, RestaurantProfile, ShiftSession } from '../types';
 
 export const RESTAURANT_PROFILE: RestaurantProfile = {
-  name: " ",
+  name: "SOUTHERN SPOON",
   branch: "Labuduwa",
   address: "Labuduwa",
   city: "Galle, Sri Lanka",
@@ -9,7 +9,7 @@ export const RESTAURANT_PROFILE: RestaurantProfile = {
   tax_number: "VAT: 114872900-7000",
   wifi_ssid: "SouthernSpoon_Guest",
   wifi_pass: "southernspoon2026",
-  footer_message: "THANK YOU FOR VISITING SOUTHERN SPOON.",
+  footer_message: "Ayubowan! THANK YOU FOR VISITING SOUTHERN SPOON.",
 };
 
 export const INITIAL_CATEGORIES: Category[] = [

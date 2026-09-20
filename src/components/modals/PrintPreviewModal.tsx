@@ -193,16 +193,8 @@ export const PrintPreviewModal: React.FC = () => {
                         className="w-24 h-24 object-contain mx-auto"
                       />
                     </div>
-                    <div className="font-extrabold text-sm tracking-wider uppercase">
-                      {restaurant.name}
-                    </div>
-                    {restaurant.branch && 
-                     restaurant.branch.toLowerCase().trim() !== restaurant.address.toLowerCase().trim() && 
-                     !restaurant.address.toLowerCase().includes(restaurant.branch.toLowerCase().trim()) && (
-                      <div className="font-bold text-xs">{restaurant.branch}</div>
-                    )}
-                    <div className="text-[10px] text-gray-700">{restaurant.address}</div>
-                    <div className="text-[10px] text-gray-700">{restaurant.city}</div>
+                    <div className="text-[10px] text-gray-700">Labuduwa</div>
+                    <div className="text-[10px] text-gray-700">Galle, Sri Lanka</div>
                     <div className="text-[10px] text-gray-700">Hotline: {restaurant.hotline}</div>
                     <div className="text-[10px] font-semibold">{restaurant.tax_number}</div>
                     <div className="border-b-2 border-dashed border-gray-900 my-2 w-full" />
@@ -387,16 +379,8 @@ export const PrintPreviewModal: React.FC = () => {
                         className="w-24 h-24 object-contain mx-auto"
                       />
                     </div>
-                    <div className="font-extrabold text-sm tracking-wider uppercase">
-                      {restaurant.name}
-                    </div>
-                    {restaurant.branch && 
-                     restaurant.branch.toLowerCase().trim() !== restaurant.address.toLowerCase().trim() && 
-                     !restaurant.address.toLowerCase().includes(restaurant.branch.toLowerCase().trim()) && (
-                      <div className="font-bold text-xs">{restaurant.branch}</div>
-                    )}
-                    <div className="text-[10px] text-gray-700">{restaurant.address}</div>
-                    <div className="text-[10px] text-gray-700">{restaurant.city}</div>
+                    <div className="text-[10px] text-gray-700">Labuduwa</div>
+                    <div className="text-[10px] text-gray-700">Galle, Sri Lanka</div>
                     <div className="text-[10px] font-extrabold text-black uppercase mt-1">
                       === GUEST CHECK / PROFORMA BILL ===
                     </div>
