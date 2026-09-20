@@ -1,15 +1,15 @@
 import { Category, MenuItem, DiningTable, RestaurantProfile, ShiftSession } from '../types';
 
 export const RESTAURANT_PROFILE: RestaurantProfile = {
-  name: "SOUTHERN SPOON",
+  name: " ",
   branch: "Labuduwa, Galle",
   address: "Labuduwa, Galle",
-  city: "Galle, Sri Lanka",
+  city: " ",
   hotline: "070 7 555 855 / 077 5 231 931",
   tax_number: "VAT: 114872900-7000",
   wifi_ssid: "SouthernSpoon_Guest",
   wifi_pass: "southernspoon2026",
-  footer_message: "Ayubowan! Bohoma Sthuthi for dining at Southern Spoon.",
+  footer_message: "Ayubowan! THANK YOU FOR VISITING SOUTHERN SPOON.",
 };
 
 export const INITIAL_CATEGORIES: Category[] = [
