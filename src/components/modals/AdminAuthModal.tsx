@@ -91,7 +91,7 @@ export const AdminAuthModal: React.FC = () => {
             {adminAuthTitle}
           </span>
           <p className="text-[10px] text-slate-400 mt-0.5">
-            Default Admin PIN: <span className="font-mono text-amber-400 font-bold">9001</span>
+            Enter 4-digit supervisor PIN to authorize
           </p>
         </div>
 

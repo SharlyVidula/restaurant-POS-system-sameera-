@@ -5,7 +5,7 @@ export const RESTAURANT_PROFILE: RestaurantProfile = {
   branch: "Labuduwa, Galle",
   address: "Labuduwa, Galle",
   city: "Galle, Sri Lanka",
-  hotline: "0707555855 / 077 523 1931",
+  hotline: "070 7 555 855 / 077 5 231 931",
   tax_number: "VAT: 114872900-7000",
   wifi_ssid: "SouthernSpoon_Guest",
   wifi_pass: "southernspoon2026",
