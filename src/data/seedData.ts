@@ -2,14 +2,14 @@ import { Category, MenuItem, DiningTable, RestaurantProfile, ShiftSession } from
 
 export const RESTAURANT_PROFILE: RestaurantProfile = {
   name: " ",
-  branch: "Labuduwa, Galle",
-  address: "Labuduwa, Galle",
-  city: " ",
+  branch: "Labuduwa",
+  address: "Labuduwa",
+  city: "Galle, Sri Lanka",
   hotline: "070 7 555 855 / 077 5 231 931",
   tax_number: "VAT: 114872900-7000",
   wifi_ssid: "SouthernSpoon_Guest",
   wifi_pass: "southernspoon2026",
-  footer_message: "Ayubowan! THANK YOU FOR VISITING SOUTHERN SPOON.",
+  footer_message: "THANK YOU FOR VISITING SOUTHERN SPOON.",
 };
 
 export const INITIAL_CATEGORIES: Category[] = [
