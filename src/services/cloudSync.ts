@@ -122,15 +122,17 @@ class CloudSyncService {
       const cloudEndpoint = typeof window !== 'undefined' ? localStorage.getItem('southern_spoon_cloud_endpoint') : null;
 
       if (cloudEndpoint && cloudEndpoint.startsWith('http')) {
+        const isGoogleScript = cloudEndpoint.includes('script.google.com');
         const res = await fetch(cloudEndpoint, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'text/plain;charset=utf-8',
           },
           body: JSON.stringify(payload),
+          mode: isGoogleScript ? 'no-cors' : 'cors',
         });
 
-        if (!res.ok) {
+        if (!isGoogleScript && !res.ok) {
           throw new Error(`Cloud server responded with status: ${res.status}`);
         }
       }
