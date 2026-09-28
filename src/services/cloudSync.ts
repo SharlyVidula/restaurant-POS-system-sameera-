@@ -1,5 +1,5 @@
 import { posDatabase } from '../db/sqlite';
-import { DailySalesReportData, MonthlySalesReportData } from '../types';
+import { DailySalesReportData, MonthlySalesReportData, ItemizedSaleRecord } from '../types';
 
 export const DEFAULT_CLOUD_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxSAOlCD3EkPY7dExpk-ZJESJSaL7BbmUvUZc5pYqGdxXmuH2ZRH5rDaM_yYPMAszemZw/exec';
 
@@ -83,6 +83,7 @@ class CloudSyncService {
     daily: DailySalesReportData;
     monthly: MonthlySalesReportData;
     order_count: number;
+    itemized_sales: ItemizedSaleRecord[];
   } {
     const today = new Date();
     const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -96,6 +97,7 @@ class CloudSyncService {
       daily,
       monthly,
       order_count: posDatabase.getOrders().length,
+      itemized_sales: daily.itemized_sales,
     };
   }
 

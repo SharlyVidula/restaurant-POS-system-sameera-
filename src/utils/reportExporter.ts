@@ -92,8 +92,23 @@ export async function generateDailyReportAuditText(
       `${pad(o.order_number, 12)} | ${pad(o.time, 10)} | ${pad(o.table || 'Takeaway', 14)} | ${pad(o.items_count.toString(), 8)} | ${pad(o.payment_method, 10)} | ${pad('Rs. ' + o.total.toLocaleString('en-LK', { minimumFractionDigits: 2 }), 14)}`
     );
   });
-  lines.push("================================================================================");
+  lines.push("--------------------------------------------------------------------------------");
   lines.push("");
+
+  if (report.itemized_sales && report.itemized_sales.length > 0) {
+    lines.push("6. ITEMIZED PORTION SALES LEDGER");
+    lines.push("--------------------------------------------------------------------------------");
+    lines.push(`${pad("Date & Time", 20)} | ${pad("Item Name with Portion Type", 30)} | ${pad("Qty", 5)} | ${pad("Amount (LKR)", 15)} | ${pad("Sum of Amount", 15)}`);
+    lines.push("--------------------------------------------------------------------------------");
+    report.itemized_sales.forEach(item => {
+      lines.push(
+        `${pad(item.date_time, 20)} | ${pad(item.item_name_with_portion, 30)} | ${pad(item.quantity.toString(), 5)} | ${pad('Rs. ' + item.amount.toLocaleString('en-LK', { minimumFractionDigits: 2 }), 15)} | ${pad('Rs. ' + item.sum_of_amount.toLocaleString('en-LK', { minimumFractionDigits: 2 }), 15)}`
+      );
+    });
+    lines.push("--------------------------------------------------------------------------------");
+    lines.push("");
+  }
+  lines.push("================================================================================");
 
   const bodyText = lines.join("\n");
   const sha256Hash = await computeSha256(bodyText);
@@ -244,4 +259,32 @@ export async function saveReportToComputer(
       message: `Failed to save report: ${err?.message || 'Unknown error'}`
     };
   }
+}
+
+/**
+ * Generate CSV export for Itemized Dish & Portion Sales
+ * Matching Google Sheets / Excel columns:
+ * Date and Time, Item Name with Portion Type, Quantity, Amount (LKR), Sum of Amount (LKR)
+ */
+export function generateItemizedSalesCsv(report: DailySalesReportData): { csv: string; filename: string } {
+  const rows: string[] = [
+    ["Date and Time", "Item Name with Portion Type", "Quantity", "Amount (LKR)", "Sum of Amount (LKR)", "Order #", "Table / Channel", "Payment Method"].join(",")
+  ];
+
+  (report.itemized_sales || []).forEach(item => {
+    rows.push([
+      `"${item.date_time}"`,
+      `"${item.item_name_with_portion.replace(/"/g, '""')}"`,
+      item.quantity.toString(),
+      item.amount.toFixed(2),
+      item.sum_of_amount.toFixed(2),
+      `"${item.order_number}"`,
+      `"${item.table_or_type || 'Takeaway'}"`,
+      `"${item.payment_method || 'CASH'}"`
+    ].join(","));
+  });
+
+  const csvContent = rows.join("\r\n");
+  const filename = `SouthernSpoon_Itemized_Sales_${report.date}.csv`;
+  return { csv: csvContent, filename };
 }

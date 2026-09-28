@@ -14,7 +14,8 @@ import {
   PriceChangeAudit,
   DailySalesReportData,
   MonthlySalesReportData,
-  TableSession
+  TableSession,
+  ItemizedSaleRecord
 } from '../types';
 import { 
   INITIAL_CATEGORIES, 
@@ -685,6 +686,35 @@ class SQLiteLocalDatabase {
       table: o.table_number,
     }));
 
+    // Build chronological itemized dish & portion ledger
+    let runningSum = 0;
+    const itemized_sales: ItemizedSaleRecord[] = [];
+    const sortedOrders = [...dayOrders].sort((a, b) => a.id - b.id);
+
+    sortedOrders.forEach(o => {
+      const dateTime = o.paid_at || o.created_at || new Date(o.id).toLocaleString();
+      const tableOrType = o.table_number ? `Table ${o.table_number}` : o.order_type.toUpperCase();
+
+      o.items.forEach(item => {
+        const itemNameWithPortion = item.variant_name 
+          ? `${item.item_name} (${item.variant_name})` 
+          : item.item_name;
+
+        runningSum += item.total_price;
+
+        itemized_sales.push({
+          date_time: dateTime,
+          item_name_with_portion: itemNameWithPortion,
+          quantity: item.quantity,
+          amount: item.total_price,
+          sum_of_amount: runningSum,
+          order_number: o.order_number,
+          table_or_type: tableOrType,
+          payment_method: (o.payment_method || 'cash').toUpperCase(),
+        });
+      });
+    });
+
     return {
       date: targetDate,
       generated_at: new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString(),
@@ -700,6 +730,7 @@ class SQLiteLocalDatabase {
       sales_by_category,
       top_selling_items,
       orders: orderSummaries,
+      itemized_sales,
     };
   }
 

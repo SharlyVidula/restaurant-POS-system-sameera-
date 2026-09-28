@@ -209,6 +209,17 @@ export interface RestaurantProfile {
   footer_message: string;
 }
 
+export interface ItemizedSaleRecord {
+  date_time: string;
+  item_name_with_portion: string;
+  quantity: number;
+  amount: number;
+  sum_of_amount: number;
+  order_number: string;
+  table_or_type?: string;
+  payment_method?: string;
+}
+
 export interface DailySalesReportData {
   date: string; // YYYY-MM-DD
   generated_at: string;
@@ -231,6 +242,7 @@ export interface DailySalesReportData {
     items_count: number;
     table?: string;
   }>;
+  itemized_sales: ItemizedSaleRecord[];
 }
 
 export interface MonthlySalesReportData {

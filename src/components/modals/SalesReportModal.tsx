@@ -5,6 +5,7 @@ import { buildDailyReportEscPos } from '../../utils/escpos';
 import { 
   generateDailyReportAuditText, 
   generateMonthlyReportAuditText, 
+  generateItemizedSalesCsv,
   saveReportToComputer 
 } from '../../utils/reportExporter';
 import { cloudSyncService, CloudSyncStatus } from '../../services/cloudSync';
@@ -26,8 +27,104 @@ import {
   RefreshCw,
   Clock,
   ShieldCheck,
-  Award
+  Award,
+  FileSpreadsheet,
+  Copy,
+  Check,
+  Search
 } from 'lucide-react';
+
+const GOOGLE_APPS_SCRIPT_TEMPLATE = `function doPost(e) {
+  try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'No payload received' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var payload = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // 1. POPULATE / UPDATE "Itemized_Sales" SHEET
+    // Columns: Date and Time | Item Name with Portion Type | Quantity | Amount | Sum of Amount
+    var itemSheetName = "Itemized_Sales";
+    var itemSheet = ss.getSheetByName(itemSheetName);
+    if (!itemSheet) {
+      itemSheet = ss.insertSheet(itemSheetName, 0);
+      var headerRow = [
+        "Date and Time",
+        "Item Name with Portion Type",
+        "Quantity",
+        "Amount (LKR)",
+        "Sum of Amount (LKR)",
+        "Order #",
+        "Table / Channel",
+        "Payment Method"
+      ];
+      itemSheet.appendRow(headerRow);
+      var headerRange = itemSheet.getRange(1, 1, 1, headerRow.length);
+      headerRange.setBackground("#0F172A")
+                 .setFontColor("#38BDF8")
+                 .setFontWeight("bold")
+                 .setFontSize(11)
+                 .setHorizontalAlignment("center");
+      itemSheet.setFrozenRows(1);
+    }
+
+    var itemRecords = payload.itemized_sales || (payload.daily && payload.daily.itemized_sales) || [];
+    if (itemRecords && itemRecords.length > 0) {
+      var lastRow = itemSheet.getLastRow();
+      var existingSignatures = {};
+      if (lastRow > 1) {
+        var existingData = itemSheet.getRange(2, 1, lastRow - 1, 6).getValues();
+        for (var i = 0; i < existingData.length; i++) {
+          var sig = existingData[i][0] + "|" + existingData[i][1] + "|" + existingData[i][5];
+          existingSignatures[sig] = true;
+        }
+      }
+
+      var rowsToAppend = [];
+      for (var j = 0; j < itemRecords.length; j++) {
+        var rec = itemRecords[j];
+        var itemSig = rec.date_time + "|" + rec.item_name_with_portion + "|" + rec.order_number;
+        if (!existingSignatures[itemSig]) {
+          var nextRowIndex = lastRow + rowsToAppend.length + 1;
+          var sumFormula = "=SUM(D$2:D" + nextRowIndex + ")";
+          rowsToAppend.push([
+            rec.date_time,
+            rec.item_name_with_portion,
+            rec.quantity,
+            rec.amount,
+            sumFormula,
+            rec.order_number,
+            rec.table_or_type || "Takeaway",
+            rec.payment_method || "CASH"
+          ]);
+          existingSignatures[itemSig] = true;
+        }
+      }
+
+      if (rowsToAppend.length > 0) {
+        itemSheet.getRange(lastRow + 1, 1, rowsToAppend.length, rowsToAppend[0].length)
+                 .setValues(rowsToAppend);
+        var numRows = rowsToAppend.length;
+        var startRow = lastRow + 1;
+        itemSheet.getRange(startRow, 4, numRows, 2).setNumberFormat("#,##0.00");
+        itemSheet.getRange(startRow, 3, numRows, 1).setHorizontalAlignment("center");
+      }
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ 
+      status: 'success', 
+      items_synced: itemRecords.length 
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ 
+      status: 'error', 
+      message: err.toString() 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
 
 interface SalesReportModalProps {
   isOpen: boolean;
@@ -46,6 +143,9 @@ export const SalesReportModal: React.FC<SalesReportModalProps> = ({ isOpen, onCl
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+
+  const [itemSearch, setItemSearch] = useState('');
+  const [copiedScript, setCopiedScript] = useState(false);
 
   // Cloud Sync State
   const [syncStatus, setSyncStatus] = useState<CloudSyncStatus>(cloudSyncService.getStatus());
@@ -98,6 +198,27 @@ export const SalesReportModal: React.FC<SalesReportModalProps> = ({ isOpen, onCl
     } catch (e: any) {
       showToast(e?.message || 'Error saving file', 'error');
     }
+  };
+
+  const handleExportItemizedCsv = async () => {
+    try {
+      const { csv, filename } = generateItemizedSalesCsv(dailyReport);
+      const res = await saveReportToComputer(csv, filename, 'Daily');
+      if (res.success) {
+        showToast(`Exported CSV for Google Sheets: ${filename}`);
+      } else {
+        showToast(res.message || 'Failed to export CSV', 'error');
+      }
+    } catch (e: any) {
+      showToast(e?.message || 'Error exporting CSV', 'error');
+    }
+  };
+
+  const handleCopyScript = () => {
+    navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_TEMPLATE);
+    setCopiedScript(true);
+    showToast("Google Apps Script code copied to clipboard!");
+    setTimeout(() => setCopiedScript(false), 3000);
   };
 
   const handlePrintDailySlip = () => {
@@ -454,6 +575,116 @@ export const SalesReportModal: React.FC<SalesReportModalProps> = ({ isOpen, onCl
                 </div>
               )}
 
+              {/* Itemized Dish & Portion Sales Ledger */}
+              {(() => {
+                const filteredList = (dailyReport.itemized_sales || []).filter(item => 
+                  item.item_name_with_portion.toLowerCase().includes(itemSearch.toLowerCase()) ||
+                  item.order_number.toLowerCase().includes(itemSearch.toLowerCase()) ||
+                  (item.table_or_type && item.table_or_type.toLowerCase().includes(itemSearch.toLowerCase()))
+                );
+                const totalQty = filteredList.reduce((sum, i) => sum + i.quantity, 0);
+                const totalAmt = filteredList.reduce((sum, i) => sum + i.amount, 0);
+
+                return (
+                  <div className="p-4 bg-slate-950/70 rounded-2xl border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <h3 className="text-xs font-bold text-slate-200 flex items-center gap-1.5 uppercase tracking-wider">
+                          <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Itemized Dish & Portion Sales Ledger</span>
+                        </h3>
+                        <p className="text-[10px] text-slate-400">
+                          Date & time, item name with portion, quantity, amount and running sum
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={itemSearch}
+                            onChange={(e) => setItemSearch(e.target.value)}
+                            placeholder="Search item / portion..."
+                            className="bg-slate-900 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 w-48"
+                          />
+                        </div>
+
+                        <button
+                          onClick={handleExportItemizedCsv}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Export CSV (Sheets)</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800 border border-slate-800/80 rounded-xl">
+                      <table className="w-full text-left text-xs font-mono">
+                        <thead className="sticky top-0 bg-slate-900 border-b border-slate-800 text-slate-400 text-[11px] z-10">
+                          <tr>
+                            <th className="py-2.5 px-3">Date and Time</th>
+                            <th className="py-2.5 px-3">Item Name with Portion Type</th>
+                            <th className="py-2.5 px-3 text-center">Quantity</th>
+                            <th className="py-2.5 px-3 text-right">Amount (LKR)</th>
+                            <th className="py-2.5 px-3 text-right text-amber-400">Sum of Amount (LKR)</th>
+                            <th className="py-2.5 px-3">Order / Table</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60 bg-slate-950/40">
+                          {filteredList.map((item, idx) => (
+                            <tr key={idx} className="hover:bg-slate-800/40 transition-colors">
+                              <td className="py-2 px-3 text-slate-400 whitespace-nowrap">{item.date_time}</td>
+                              <td className="py-2 px-3 text-slate-200 font-semibold">
+                                <span>{item.item_name_with_portion}</span>
+                              </td>
+                              <td className="py-2 px-3 text-center text-slate-300 font-bold">{item.quantity}</td>
+                              <td className="py-2 px-3 text-right text-slate-200 font-mono">
+                                Rs. {item.amount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}
+                              </td>
+                              <td className="py-2 px-3 text-right font-black text-amber-400 font-mono bg-amber-500/5">
+                                Rs. {item.sum_of_amount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}
+                              </td>
+                              <td className="py-2 px-3 text-slate-400 text-[10px]">
+                                <span className="font-bold text-slate-300">#{item.order_number}</span>
+                                {item.table_or_type && <span className="ml-1.5 text-slate-500">({item.table_or_type})</span>}
+                              </td>
+                            </tr>
+                          ))}
+                          {filteredList.length === 0 && (
+                            <tr>
+                              <td colSpan={6} className="py-6 text-center text-slate-500 italic">
+                                {itemSearch ? 'No items match your search filter' : 'No food portions settled for this date'}
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                        {filteredList.length > 0 && (
+                          <tfoot className="sticky bottom-0 bg-slate-900 border-t-2 border-slate-700 text-xs font-bold">
+                            <tr>
+                              <td className="py-2 px-3 text-slate-400" colSpan={2}>
+                                TOTAL ({filteredList.length} line items)
+                              </td>
+                              <td className="py-2 px-3 text-center text-emerald-400">
+                                {totalQty}
+                              </td>
+                              <td className="py-2 px-3 text-right text-slate-200">
+                                Rs. {totalAmt.toLocaleString('en-LK', { minimumFractionDigits: 2 })}
+                              </td>
+                              <td className="py-2 px-3 text-right text-amber-400 font-black">
+                                Rs. {(filteredList[filteredList.length - 1]?.sum_of_amount || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}
+                              </td>
+                              <td></td>
+                            </tr>
+                          </tfoot>
+                        )}
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Actions Footer */}
               <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-2">
@@ -485,6 +716,14 @@ export const SalesReportModal: React.FC<SalesReportModalProps> = ({ isOpen, onCl
                   >
                     <Printer className="w-3.5 h-3.5" />
                     <span>Print 80mm Slip</span>
+                  </button>
+
+                  <button
+                    onClick={handleExportItemizedCsv}
+                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border border-slate-700"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Export Items CSV</span>
                   </button>
 
                   <button
@@ -741,6 +980,71 @@ export const SalesReportModal: React.FC<SalesReportModalProps> = ({ isOpen, onCl
                   >
                     Save Endpoint
                   </button>
+                </div>
+              </div>
+
+              {/* Google Sheets Live Sync Setup Guide & Script */}
+              <div className="p-5 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
+                      <FileSpreadsheet className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                        Google Sheets Live Itemized Table Sync
+                      </h4>
+                      <p className="text-[11px] text-slate-400">
+                        Automatically populates your Google Sheet with item portions and cumulative sum
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleCopyScript}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-2 border border-slate-700 transition-all cursor-pointer active:scale-95"
+                  >
+                    {copiedScript ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-400" />}
+                    <span>{copiedScript ? 'Copied to Clipboard!' : 'Copy Google Apps Script'}</span>
+                  </button>
+                </div>
+
+                <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 text-xs text-slate-300 space-y-2">
+                  <span className="font-bold text-amber-400 block text-[11px] uppercase tracking-wider">
+                    Target Table Columns Generated in Google Sheets ("Itemized_Sales"):
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] font-mono">
+                    <div className="p-2 bg-slate-950 rounded border border-slate-800 text-center">
+                      <span className="text-slate-400 block text-[10px]">Col A</span>
+                      <span className="font-bold text-slate-200">Date and Time</span>
+                    </div>
+                    <div className="p-2 bg-slate-950 rounded border border-slate-800 text-center">
+                      <span className="text-slate-400 block text-[10px]">Col B</span>
+                      <span className="font-bold text-slate-200">Item Name with Portion Type</span>
+                    </div>
+                    <div className="p-2 bg-slate-950 rounded border border-slate-800 text-center">
+                      <span className="text-slate-400 block text-[10px]">Col C</span>
+                      <span className="font-bold text-slate-200">Quantity</span>
+                    </div>
+                    <div className="p-2 bg-slate-950 rounded border border-slate-800 text-center">
+                      <span className="text-slate-400 block text-[10px]">Col D</span>
+                      <span className="font-bold text-slate-200">Amount (LKR)</span>
+                    </div>
+                    <div className="p-2 bg-slate-950 rounded border border-slate-800 text-center">
+                      <span className="text-slate-400 block text-[10px]">Col E</span>
+                      <span className="font-bold text-amber-400">Sum of Amount (LKR)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-slate-400 space-y-1">
+                  <p className="font-semibold text-slate-300">How to update your Google Sheet:</p>
+                  <ol className="list-decimal list-inside space-y-0.5 text-slate-400 pl-1">
+                    <li>Open your Google Sheet ("Southernspoon") in your browser.</li>
+                    <li>Go to top menu: <strong className="text-slate-200">Extensions &gt; Apps Script</strong>.</li>
+                    <li>Click the <strong>Copy Google Apps Script</strong> button above, then paste and replace the code in Apps Script.</li>
+                    <li>Click <strong className="text-slate-200">Deploy &gt; Manage deployments &gt; Edit icon &gt; Version: New version &gt; Deploy</strong>.</li>
+                  </ol>
                 </div>
               </div>
             </div>
