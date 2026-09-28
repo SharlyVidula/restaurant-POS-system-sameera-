@@ -9,7 +9,8 @@ export const TableModal: React.FC = () => {
     closeTableModal, 
     tables, 
     selectedTable, 
-    selectTable 
+    selectTable,
+    tableSessions,
   } = usePosStore();
 
   if (!isTableModalOpen) return null;
@@ -30,7 +31,7 @@ export const TableModal: React.FC = () => {
                 Dining Floor & Table Layout
               </h2>
               <p className="text-xs text-slate-400">
-                Select a dining table to assign or transfer order
+                Independent billing per table • Click any table to switch or manage orders
               </p>
             </div>
           </div>
@@ -72,8 +73,11 @@ export const TableModal: React.FC = () => {
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {zoneTables.map((table) => {
+                    const session = tableSessions[`table-${table.id}`];
+                    const sessionItemCount = session?.cart ? session.cart.reduce((sum, item) => sum + item.quantity, 0) : 0;
+
                     const isSelected = selectedTable?.id === table.id;
-                    const isOccupied = table.status === 'occupied';
+                    const isOccupied = table.status === 'occupied' || sessionItemCount > 0;
                     const isBilled = table.status === 'billed';
 
                     let statusBorder = 'border-slate-800 hover:border-emerald-500/50';
@@ -105,7 +109,7 @@ export const TableModal: React.FC = () => {
                             {table.table_number}
                           </span>
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border capitalize ${statusBadge}`}>
-                            {table.status}
+                            {isOccupied ? 'Occupied' : table.status}
                           </span>
                         </div>
 
@@ -115,18 +119,29 @@ export const TableModal: React.FC = () => {
                             <span>Capacity: {table.capacity}p</span>
                           </div>
 
-                          {table.occupied_at && (
+                          {sessionItemCount > 0 ? (
+                            <div className="flex items-center gap-1 text-amber-400 text-xs font-semibold">
+                              <Receipt className="w-3 h-3 text-amber-400" />
+                              <span>{sessionItemCount} {sessionItemCount === 1 ? 'item' : 'items'} in order</span>
+                            </div>
+                          ) : table.occupied_at ? (
                             <div className="flex items-center gap-1 text-slate-400 text-xs">
                               <Clock className="w-3 h-3 text-amber-500" />
                               <span>Since {table.occupied_at}</span>
                             </div>
-                          )}
+                          ) : null}
                         </div>
 
                         <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between">
                           {table.current_amount ? (
+                            <div className="flex flex-col">
+                              <span className="font-mono text-xs font-bold text-amber-400">
+                                Rs. {table.current_amount.toLocaleString()}
+                              </span>
+                            </div>
+                          ) : sessionItemCount > 0 ? (
                             <span className="font-mono text-xs font-bold text-amber-400">
-                              Rs. {table.current_amount.toLocaleString()}
+                              Order Active
                             </span>
                           ) : (
                             <span className="text-[11px] text-emerald-400 font-semibold">

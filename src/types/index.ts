@@ -50,6 +50,21 @@ export interface DiningTable {
   current_amount?: number;
 }
 
+export interface TableSession {
+  table_id: number | null;
+  table_number?: string;
+  order_type: OrderType;
+  cart: CartItem[];
+  discountPercentage: number;
+  discountAmount: number;
+  includeServiceCharge: boolean;
+  includeTax: boolean;
+  customerName: string;
+  customerPhone: string;
+  orderNotes: string;
+  updated_at?: string;
+}
+
 export interface CartItemModifier {
   name: string;
   price: number;

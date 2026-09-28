@@ -16,7 +16,8 @@ import {
   PaymentMethod,
   UserRole,
   CashTransaction,
-  PriceChangeAudit
+  PriceChangeAudit,
+  TableSession
 } from '../types';
 import { posDatabase } from '../db/sqlite';
 import { RESTAURANT_PROFILE } from '../data/seedData';
@@ -74,6 +75,7 @@ interface PosState {
   customerName: string;
   customerPhone: string;
   orderNotes: string;
+  tableSessions: Record<string, TableSession>;
 
   // UI Filtering
   selectedCategoryId: number | null; // null = all
@@ -192,6 +194,88 @@ interface PosState {
   loadOrderIntoCart: (order: Order) => void;
 }
 
+function getSessionKey(orderType: OrderType, tableId?: number | null): string {
+  if (orderType === 'dine_in') {
+    return tableId ? `table-${tableId}` : 'dine_in_general';
+  }
+  return orderType;
+}
+
+function calculateNetTotalFromCart(
+  cart: CartItem[],
+  discountPercentage: number = 0,
+  discountAmount: number = 0,
+  includeServiceCharge: boolean = true,
+  includeTax: boolean = false
+): number {
+  const subtotal = cart.reduce((sum, item) => sum + item.total_price, 0);
+  let discount = 0;
+  if (discountPercentage > 0) {
+    discount = (subtotal * discountPercentage) / 100;
+  } else if (discountAmount > 0) {
+    discount = Math.min(discountAmount, subtotal);
+  }
+  const discountedSubtotal = Math.max(0, subtotal - discount);
+  const serviceCharge = includeServiceCharge ? (discountedSubtotal * 0.10) : 0;
+  const tax = includeTax ? (discountedSubtotal * 0.08) : 0;
+  return Math.round(discountedSubtotal + serviceCharge + tax);
+}
+
+function syncSession(state: {
+  orderType: OrderType;
+  selectedTable: DiningTable | null;
+  cart: CartItem[];
+  discountPercentage: number;
+  discountAmount: number;
+  includeServiceCharge: boolean;
+  includeTax: boolean;
+  customerName: string;
+  customerPhone: string;
+  orderNotes: string;
+  tableSessions: Record<string, TableSession>;
+}): Record<string, TableSession> {
+  const key = getSessionKey(state.orderType, state.selectedTable?.id);
+  const updatedSessions = { ...state.tableSessions };
+
+  if (state.cart && state.cart.length > 0) {
+    const session: TableSession = {
+      table_id: state.selectedTable ? state.selectedTable.id : null,
+      table_number: state.selectedTable?.table_number,
+      order_type: state.orderType,
+      cart: state.cart,
+      discountPercentage: state.discountPercentage,
+      discountAmount: state.discountAmount,
+      includeServiceCharge: state.includeServiceCharge,
+      includeTax: state.includeTax,
+      customerName: state.customerName,
+      customerPhone: state.customerPhone,
+      orderNotes: state.orderNotes,
+      updated_at: new Date().toISOString(),
+    };
+    updatedSessions[key] = session;
+
+    if (state.orderType === 'dine_in' && state.selectedTable) {
+      const net = calculateNetTotalFromCart(
+        state.cart,
+        state.discountPercentage,
+        state.discountAmount,
+        state.includeServiceCharge,
+        state.includeTax
+      );
+      posDatabase.updateTableStatus(state.selectedTable.id, 'occupied', undefined, net);
+    }
+  } else {
+    // If cart is empty, remove session for this table
+    delete updatedSessions[key];
+    if (state.orderType === 'dine_in' && state.selectedTable) {
+      posDatabase.updateTableStatus(state.selectedTable.id, 'vacant');
+    }
+  }
+
+  posDatabase.saveTableSessions(updatedSessions);
+  return updatedSessions;
+}
+
 export const usePosStore = create<PosState>((set, get) => ({
   restaurant: RESTAURANT_PROFILE,
   categories: [],
@@ -234,40 +318,136 @@ export const usePosStore = create<PosState>((set, get) => ({
   currentUserRole: 'cashier',
   cashTransactions: [],
   priceAudits: [],
+  tableSessions: {},
 
   init: () => {
     posDatabase.initDatabase();
     const needsFloat = posDatabase.isOpeningFloatRequired();
+    const savedSessions = posDatabase.getTableSessions();
+
+    // Synchronize stored table sessions with table occupied status and amount in DB
+    Object.values(savedSessions).forEach((session) => {
+      if (session.order_type === 'dine_in' && session.table_id && session.cart && session.cart.length > 0) {
+        const net = calculateNetTotalFromCart(
+          session.cart,
+          session.discountPercentage || 0,
+          session.discountAmount || 0,
+          session.includeServiceCharge ?? true,
+          session.includeTax ?? false
+        );
+        posDatabase.updateTableStatus(session.table_id, 'occupied', undefined, net);
+      }
+    });
+
+    const tables = posDatabase.getTables();
     set({
       categories: posDatabase.getCategories(),
       menuItems: posDatabase.getMenuItems(),
-      tables: posDatabase.getTables(),
+      tables,
       activeShift: posDatabase.getActiveShift(),
       recentOrders: posDatabase.getOrders(),
       cashTransactions: posDatabase.getCashTransactions(),
       priceAudits: posDatabase.getPriceAudits(),
       isOpeningFloatModalOpen: needsFloat,
+      tableSessions: savedSessions,
     });
   },
 
   setOrderType: (type: OrderType) => {
-    set({ 
-      orderType: type,
-      // Default service charge to true for dine-in, false for takeaway/delivery
-      includeServiceCharge: type === 'dine_in',
-      selectedTable: type === 'dine_in' ? get().selectedTable : null
-    });
+    const state = get();
+    if (state.orderType === type && (type !== 'dine_in' || state.selectedTable)) return;
+
+    // 1. Sync and isolate current active session before switching
+    const updatedSessions = syncSession(state);
+
+    // 2. Load the isolated session for the destination order type
+    if (type === 'dine_in') {
+      const targetKey = state.selectedTable ? `table-${state.selectedTable.id}` : 'dine_in_general';
+      const targetSession = updatedSessions[targetKey];
+
+      set({
+        orderType: type,
+        includeServiceCharge: true,
+        cart: targetSession?.cart || [],
+        discountPercentage: targetSession?.discountPercentage || 0,
+        discountAmount: targetSession?.discountAmount || 0,
+        includeTax: targetSession?.includeTax ?? false,
+        customerName: targetSession?.customerName || '',
+        customerPhone: targetSession?.customerPhone || '',
+        orderNotes: targetSession?.orderNotes || '',
+        tableSessions: updatedSessions,
+        tables: posDatabase.getTables(),
+      });
+    } else {
+      const targetKey = type;
+      const targetSession = updatedSessions[targetKey];
+
+      set({
+        orderType: type,
+        selectedTable: null,
+        includeServiceCharge: false,
+        cart: targetSession?.cart || [],
+        discountPercentage: targetSession?.discountPercentage || 0,
+        discountAmount: targetSession?.discountAmount || 0,
+        includeTax: targetSession?.includeTax ?? false,
+        customerName: targetSession?.customerName || '',
+        customerPhone: targetSession?.customerPhone || '',
+        orderNotes: targetSession?.orderNotes || '',
+        tableSessions: updatedSessions,
+        tables: posDatabase.getTables(),
+      });
+    }
   },
 
   setSelectedCategory: (id) => set({ selectedCategoryId: id }),
   setSearchQuery: (query) => set({ searchQuery: query }),
 
   selectTable: (table) => {
-    set({ 
-      selectedTable: table,
-      orderType: 'dine_in',
-      isTableModalOpen: false 
-    });
+    const state = get();
+
+    // 1. Save and isolate the current table's order session before switching
+    const updatedSessions = syncSession(state);
+
+    // 2. Load the target table's own independent session
+    if (table) {
+      const targetKey = `table-${table.id}`;
+      const targetSession = updatedSessions[targetKey];
+
+      set({
+        selectedTable: table,
+        orderType: 'dine_in',
+        cart: targetSession?.cart || [],
+        discountPercentage: targetSession?.discountPercentage || 0,
+        discountAmount: targetSession?.discountAmount || 0,
+        includeServiceCharge: targetSession?.includeServiceCharge ?? true,
+        includeTax: targetSession?.includeTax ?? false,
+        customerName: targetSession?.customerName || '',
+        customerPhone: targetSession?.customerPhone || '',
+        orderNotes: targetSession?.orderNotes || '',
+        tableSessions: updatedSessions,
+        tables: posDatabase.getTables(),
+        isTableModalOpen: false,
+      });
+    } else {
+      const targetKey = 'dine_in_general';
+      const targetSession = updatedSessions[targetKey];
+
+      set({
+        selectedTable: null,
+        orderType: 'dine_in',
+        cart: targetSession?.cart || [],
+        discountPercentage: targetSession?.discountPercentage || 0,
+        discountAmount: targetSession?.discountAmount || 0,
+        includeServiceCharge: targetSession?.includeServiceCharge ?? true,
+        includeTax: targetSession?.includeTax ?? false,
+        customerName: targetSession?.customerName || '',
+        customerPhone: targetSession?.customerPhone || '',
+        orderNotes: targetSession?.orderNotes || '',
+        tableSessions: updatedSessions,
+        tables: posDatabase.getTables(),
+        isTableModalOpen: false,
+      });
+    }
   },
 
   openVariantModal: (item) => set({ variantModalItem: item }),
@@ -316,7 +496,13 @@ export const usePosStore = create<PosState>((set, get) => ({
       }
     });
 
-    set({ cart: currentCart, variantModalItem: null });
+    const updatedSessions = syncSession({ ...state, cart: currentCart });
+    set({
+      cart: currentCart,
+      variantModalItem: null,
+      tableSessions: updatedSessions,
+      tables: posDatabase.getTables(),
+    });
   },
 
   addToCart: (item, variant, quantity = 1, notes = '', modifiers = []) => {
@@ -326,22 +512,28 @@ export const usePosStore = create<PosState>((set, get) => ({
   quickAddStepper: (item, delta) => {
     const state = get();
     const existing = state.cart.find(c => c.menu_item_id === item.id && !c.variant_id);
+    let updatedCart = [...state.cart];
     if (existing) {
       const newQty = existing.quantity + delta;
       if (newQty <= 0) {
-        set({ cart: state.cart.filter(c => c.cart_item_id !== existing.cart_item_id) });
+        updatedCart = updatedCart.filter(c => c.cart_item_id !== existing.cart_item_id);
       } else {
-        set({
-          cart: state.cart.map(c => c.cart_item_id === existing.cart_item_id ? {
-            ...c,
-            quantity: newQty,
-            total_price: newQty * c.unit_price,
-          } : c)
-        });
+        updatedCart = updatedCart.map(c => c.cart_item_id === existing.cart_item_id ? {
+          ...c,
+          quantity: newQty,
+          total_price: newQty * c.unit_price,
+        } : c);
       }
     } else if (delta > 0) {
       get().addToCart(item, undefined, delta);
+      return;
     }
+    const updatedSessions = syncSession({ ...state, cart: updatedCart });
+    set({
+      cart: updatedCart,
+      tableSessions: updatedSessions,
+      tables: posDatabase.getTables(),
+    });
   },
 
   updateCartQuantity: (cartItemId, delta) => {
@@ -350,24 +542,46 @@ export const usePosStore = create<PosState>((set, get) => ({
     if (!target) return;
 
     const newQty = target.quantity + delta;
+    let updatedCart: CartItem[];
     if (newQty <= 0) {
-      set({ cart: state.cart.filter(c => c.cart_item_id !== cartItemId) });
+      updatedCart = state.cart.filter(c => c.cart_item_id !== cartItemId);
     } else {
-      set({
-        cart: state.cart.map(c => c.cart_item_id === cartItemId ? {
-          ...c,
-          quantity: newQty,
-          total_price: newQty * c.unit_price,
-        } : c)
-      });
+      updatedCart = state.cart.map(c => c.cart_item_id === cartItemId ? {
+        ...c,
+        quantity: newQty,
+        total_price: newQty * c.unit_price,
+      } : c);
     }
+    const updatedSessions = syncSession({ ...state, cart: updatedCart });
+    set({
+      cart: updatedCart,
+      tableSessions: updatedSessions,
+      tables: posDatabase.getTables(),
+    });
   },
 
   removeCartItem: (cartItemId) => {
-    set(state => ({ cart: state.cart.filter(c => c.cart_item_id !== cartItemId) }));
+    const state = get();
+    const updatedCart = state.cart.filter(c => c.cart_item_id !== cartItemId);
+    const updatedSessions = syncSession({ ...state, cart: updatedCart });
+    set({
+      cart: updatedCart,
+      tableSessions: updatedSessions,
+      tables: posDatabase.getTables(),
+    });
   },
 
   clearCart: () => {
+    const state = get();
+    const key = getSessionKey(state.orderType, state.selectedTable?.id);
+    const updatedSessions = { ...state.tableSessions };
+    delete updatedSessions[key];
+    posDatabase.saveTableSessions(updatedSessions);
+
+    if (state.orderType === 'dine_in' && state.selectedTable) {
+      posDatabase.updateTableStatus(state.selectedTable.id, 'vacant');
+    }
+
     set({
       cart: [],
       discountPercentage: 0,
@@ -375,15 +589,53 @@ export const usePosStore = create<PosState>((set, get) => ({
       customerName: '',
       customerPhone: '',
       orderNotes: '',
+      tableSessions: updatedSessions,
+      tables: posDatabase.getTables(),
     });
   },
 
-  setDiscountPercentage: (pct) => set({ discountPercentage: pct, discountAmount: 0 }),
-  setDiscountAmount: (amt) => set({ discountAmount: amt, discountPercentage: 0 }),
-  toggleServiceCharge: () => set(state => ({ includeServiceCharge: !state.includeServiceCharge })),
-  toggleTax: () => set(state => ({ includeTax: !state.includeTax })),
-  setCustomerInfo: (name, phone) => set({ customerName: name, customerPhone: phone }),
-  setOrderNotes: (notes) => set({ orderNotes: notes }),
+  setDiscountPercentage: (pct) => {
+    set(state => {
+      const next = { ...state, discountPercentage: pct, discountAmount: 0 };
+      const updatedSessions = syncSession(next);
+      return { discountPercentage: pct, discountAmount: 0, tableSessions: updatedSessions };
+    });
+  },
+  setDiscountAmount: (amt) => {
+    set(state => {
+      const next = { ...state, discountAmount: amt, discountPercentage: 0 };
+      const updatedSessions = syncSession(next);
+      return { discountAmount: amt, discountPercentage: 0, tableSessions: updatedSessions };
+    });
+  },
+  toggleServiceCharge: () => {
+    set(state => {
+      const next = { ...state, includeServiceCharge: !state.includeServiceCharge };
+      const updatedSessions = syncSession(next);
+      return { includeServiceCharge: !state.includeServiceCharge, tableSessions: updatedSessions };
+    });
+  },
+  toggleTax: () => {
+    set(state => {
+      const next = { ...state, includeTax: !state.includeTax };
+      const updatedSessions = syncSession(next);
+      return { includeTax: !state.includeTax, tableSessions: updatedSessions };
+    });
+  },
+  setCustomerInfo: (name, phone) => {
+    set(state => {
+      const next = { ...state, customerName: name, customerPhone: phone };
+      const updatedSessions = syncSession(next);
+      return { customerName: name, customerPhone: phone, tableSessions: updatedSessions };
+    });
+  },
+  setOrderNotes: (notes) => {
+    set(state => {
+      const next = { ...state, orderNotes: notes };
+      const updatedSessions = syncSession(next);
+      return { orderNotes: notes, tableSessions: updatedSessions };
+    });
+  },
 
   // Financial calculations
   getSubtotal: () => {
@@ -542,6 +794,16 @@ export const usePosStore = create<PosState>((set, get) => ({
     // Build Receipt ESC/POS
     const receiptBuilder = buildCustomerReceiptEscPos(savedOrder, state.restaurant, 80);
 
+    // Clean up settled table/order session
+    const key = getSessionKey(state.orderType, state.selectedTable?.id);
+    const updatedSessions = { ...state.tableSessions };
+    delete updatedSessions[key];
+    posDatabase.saveTableSessions(updatedSessions);
+
+    if (state.orderType === 'dine_in' && state.selectedTable) {
+      posDatabase.updateTableStatus(state.selectedTable.id, 'vacant');
+    }
+
     // Refresh state
     set({
       recentOrders: posDatabase.getOrders(),
@@ -555,6 +817,7 @@ export const usePosStore = create<PosState>((set, get) => ({
       orderNotes: '',
       discountPercentage: 0,
       discountAmount: 0,
+      tableSessions: updatedSessions,
       printPreview: {
         title: `Customer Thermal Receipt - #${savedOrder.order_number}`,
         type: 'RECEIPT',
@@ -683,7 +946,12 @@ export const usePosStore = create<PosState>((set, get) => ({
 
     const billBuilder = buildBillEscPos(billOrder, state.restaurant, 80);
 
+    if (state.orderType === 'dine_in' && state.selectedTable) {
+      posDatabase.updateTableStatus(state.selectedTable.id, 'billed', undefined, state.getNetTotal());
+    }
+
     set({
+      tables: posDatabase.getTables(),
       printPreview: {
         title: `Guest Check / Bill - ${state.selectedTable ? state.selectedTable.table_number : 'Takeaway'}`,
         type: 'BILL',
@@ -731,6 +999,19 @@ export const usePosStore = create<PosState>((set, get) => ({
 
     const table = order.table_id ? get().tables.find(t => t.id === order.table_id) || null : null;
 
+    const nextState = {
+      ...get(),
+      cart: cartItems,
+      orderType: order.order_type,
+      selectedTable: table,
+      discountPercentage: order.discount_percentage || 0,
+      discountAmount: order.discount_amount || 0,
+      customerName: order.customer_name || '',
+      customerPhone: order.customer_phone || '',
+      orderNotes: order.notes || '',
+    };
+    const updatedSessions = syncSession(nextState);
+
     set({
       cart: cartItems,
       orderType: order.order_type,
@@ -740,6 +1021,8 @@ export const usePosStore = create<PosState>((set, get) => ({
       customerName: order.customer_name || '',
       customerPhone: order.customer_phone || '',
       orderNotes: order.notes || '',
+      tableSessions: updatedSessions,
+      tables: posDatabase.getTables(),
       isHistoryModalOpen: false,
     });
   },

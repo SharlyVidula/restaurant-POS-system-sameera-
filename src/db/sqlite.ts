@@ -13,7 +13,8 @@ import {
   CashTransaction,
   PriceChangeAudit,
   DailySalesReportData,
-  MonthlySalesReportData
+  MonthlySalesReportData,
+  TableSession
 } from '../types';
 import { 
   INITIAL_CATEGORIES, 
@@ -35,6 +36,7 @@ const STORAGE_KEYS = {
   PRICE_AUDITS: 'galle_pos_price_audits_v1',
   ADMIN_PIN: 'galle_pos_admin_pin_v1',
   LAST_FLOAT_DATE: 'galle_pos_last_float_date_v1',
+  TABLE_SESSIONS: 'galle_pos_table_sessions_v1',
 };
 
 class SQLiteLocalDatabase {
@@ -219,6 +221,23 @@ class SQLiteLocalDatabase {
       return table;
     }
     return undefined;
+  }
+
+  public getTableSessions(): Record<string, TableSession> {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.TABLE_SESSIONS);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  public saveTableSessions(sessions: Record<string, TableSession>): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.TABLE_SESSIONS, JSON.stringify(sessions));
+    } catch (e) {
+      console.error("Failed to persist table sessions", e);
+    }
   }
 
   // --- ORDERS ---
