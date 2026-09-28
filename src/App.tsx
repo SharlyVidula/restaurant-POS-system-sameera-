@@ -15,6 +15,7 @@ import { AdminAuthModal } from './components/modals/AdminAuthModal';
 import { CashPayoutModal } from './components/modals/CashPayoutModal';
 import { MenuPriceModal } from './components/modals/MenuPriceModal';
 import { SalesReportModal } from './components/modals/SalesReportModal';
+import { OpeningFloatModal } from './components/modals/OpeningFloatModal';
 import { SplashScreen } from './components/common/SplashScreen';
 import { Sparkles, Utensils } from 'lucide-react';
 
@@ -38,6 +39,9 @@ export const App: React.FC = () => {
     isMenuPriceModalOpen,
     isSalesReportModalOpen,
     closeSalesReport,
+    isOpeningFloatModalOpen,
+    isOpeningFloatRequired,
+    openOpeningFloatModal,
   } = usePosStore();
 
   useEffect(() => {
@@ -109,9 +113,19 @@ export const App: React.FC = () => {
       </div>
 
       {/* Startup Splash & Loading Screen */}
-      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+      {showSplash && (
+        <SplashScreen 
+          onComplete={() => {
+            setShowSplash(false);
+            if (isOpeningFloatRequired()) {
+              openOpeningFloatModal();
+            }
+          }} 
+        />
+      )}
 
       {/* Interactive Modals */}
+      {isOpeningFloatModalOpen && <OpeningFloatModal />}
       {variantModalItem && <VariantModal />}
       {isPaymentModalOpen && <PaymentModal />}
       {isTableModalOpen && <TableModal />}

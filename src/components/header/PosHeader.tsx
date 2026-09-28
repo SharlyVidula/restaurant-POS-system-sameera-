@@ -15,7 +15,8 @@ import {
   GitBranch,
   Tag,
   ShieldCheck,
-  BarChart3
+  BarChart3,
+  Banknote
 } from 'lucide-react';
 import { OrderType } from '../../types';
 import { GitUpdateModal } from '../modals/GitUpdateModal';
@@ -40,7 +41,8 @@ export const PosHeader: React.FC = () => {
     requireAdminAuth,
     openCashPayoutModal,
     openMenuPriceModal,
-    openSalesReport
+    openSalesReport,
+    openOpeningFloatModal
   } = usePosStore();
 
   const [time, setTime] = useState<string>('');
@@ -153,6 +155,17 @@ export const PosHeader: React.FC = () => {
         >
           <ShieldCheck className={`w-3.5 h-3.5 ${currentUserRole === 'admin' ? 'text-amber-400' : 'text-slate-400'}`} />
           <span>{currentUserRole === 'admin' ? 'ADMIN' : 'CASHIER'}</span>
+        </button>
+
+        {/* Opening Float Badge & Adjust Button */}
+        <button
+          onClick={openOpeningFloatModal}
+          title="Day Opening Cash Float (Click to view or adjust)"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-amber-300 border border-slate-700 hover:bg-slate-700 hover:border-amber-500/50 hover:text-amber-200 transition-all shadow-sm"
+        >
+          <Banknote className="w-3.5 h-3.5 text-amber-400" />
+          <span className="hidden sm:inline">Float:</span>
+          <span className="font-mono font-bold">Rs. {activeShift.opening_float.toLocaleString('en-LK', { minimumFractionDigits: 0 })}</span>
         </button>
 
         {/* Cash Drawer Lending / Payout Button */}

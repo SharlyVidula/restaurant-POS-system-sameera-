@@ -1,4 +1,4 @@
-import { Order, OrderItem, RestaurantProfile, XReportData, ZReportData, CashTransaction, DailySalesReportData } from '../types';
+import { Order, OrderItem, RestaurantProfile, XReportData, ZReportData, CashTransaction, DailySalesReportData, ShiftSession } from '../types';
 import { getLogoEscPosBytes } from './logoData';
 
 export const ESC = 0x1B;
@@ -722,3 +722,75 @@ export function buildDailyReportEscPos(report: DailySalesReportData, restaurant:
 
   return printer;
 }
+
+/**
+ * Generate binary ESC/POS payload for Official Day Start Opening Cash Float Slip
+ */
+export function buildOpeningFloatSlipEscPos(
+  shift: ShiftSession,
+  restaurant: RestaurantProfile,
+  adminName: string = 'Admin Manager',
+  breakdown?: Record<string, number>
+): EscPosBuilder {
+  const printer = new EscPosBuilder(80);
+
+  printer.alignCenter()
+    .bold(true)
+    .text("================================================")
+    .newLine()
+    .text("        DAY START - OPENING CASH FLOAT")
+    .newLine()
+    .text("================================================")
+    .newLine()
+    .bold(false)
+    .text(restaurant.name)
+    .newLine()
+    .text(`${restaurant.branch}, ${restaurant.city}`)
+    .newLine()
+    .text(`Tel: ${restaurant.hotline}`)
+    .newLine()
+    .doubleLine();
+
+  printer.alignLeft()
+    .twoColumn("Register Number:", shift.register_number)
+    .twoColumn("Date & Time:", shift.float_set_at || (new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString()))
+    .twoColumn("Authorized By:", adminName)
+    .twoColumn("Cashier on Duty:", shift.cashier_name)
+    .line('-');
+
+  if (breakdown && Object.keys(breakdown).length > 0) {
+    printer.bold(true).text("PHYSICAL DENOMINATION COUNT:").newLine().bold(false);
+    Object.entries(breakdown).forEach(([denom, count]) => {
+      if (count > 0) {
+        const noteVal = parseInt(denom, 10);
+        const subtotal = isNaN(noteVal) ? count : noteVal * count;
+        const label = isNaN(noteVal) ? denom : `Rs. ${noteVal.toLocaleString()} x ${count}`;
+        printer.twoColumn(label, `Rs. ${subtotal.toLocaleString('en-LK')}`);
+      }
+    });
+    printer.line('.');
+  }
+
+  printer.alignRight()
+    .bold(true).doubleHeight(true)
+    .twoColumn("OPENING CASH FLOAT:", `Rs. ${shift.opening_float.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`)
+    .doubleHeight(false).bold(false)
+    .doubleLine();
+
+  printer.alignCenter()
+    .newLine()
+    .text("Shift session successfully initialized.")
+    .newLine()
+    .text("Cash drawer initial balance verified.")
+    .newLine()
+    .newLine()
+    .text("Cashier Signature:   __________________")
+    .newLine()
+    .newLine()
+    .text("Admin/Supervisor:   __________________")
+    .newLine()
+    .cut();
+
+  return printer;
+}
+

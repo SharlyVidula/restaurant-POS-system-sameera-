@@ -27,13 +27,14 @@ import {
   buildXReportEscPos, 
   buildZReportEscPos, 
   buildBillEscPos,
-  buildPayoutVoucherEscPos
+  buildPayoutVoucherEscPos,
+  buildOpeningFloatSlipEscPos
 } from '../utils/escpos';
 import { cloudSyncService } from '../services/cloudSync';
 
 export interface PrintPreviewData {
   title: string;
-  type: 'RECEIPT' | 'KOT' | 'BILL' | 'X_REPORT' | 'Z_REPORT' | 'PAYOUT_VOUCHER';
+  type: 'RECEIPT' | 'KOT' | 'BILL' | 'X_REPORT' | 'Z_REPORT' | 'PAYOUT_VOUCHER' | 'OPENING_FLOAT';
   plainText: string;
   hexDump: string;
   width: 80 | 58;
@@ -50,6 +51,7 @@ export interface PrintPreviewData {
   xReportData?: XReportData;
   zReportData?: ZReportData;
   payoutData?: CashTransaction;
+  shiftData?: ShiftSession;
 }
 
 interface PosState {
@@ -89,6 +91,7 @@ interface PosState {
   isCashPayoutModalOpen: boolean;
   isMenuPriceModalOpen: boolean;
   isAdminAuthModalOpen: boolean;
+  isOpeningFloatModalOpen: boolean;
   adminAuthTitle: string;
   adminAuthPendingAction: (() => void) | null;
   printPreview: PrintPreviewData | null;
@@ -165,6 +168,17 @@ interface PosState {
   closeXReport: () => void;
   openZReport: () => void;
   closeZReport: () => void;
+  openOpeningFloatModal: () => void;
+  closeOpeningFloatModal: () => void;
+  isOpeningFloatRequired: () => boolean;
+  setOpeningFloat: (
+    amount: number, 
+    cashierName?: string, 
+    notes?: string, 
+    breakdown?: Record<string, number>, 
+    kickDrawer?: boolean, 
+    printSlip?: boolean
+  ) => ShiftSession;
   closePrintPreview: () => void;
   setPrintPreview: (data: PrintPreviewData | null) => void;
   printBillPreview: () => void;
@@ -205,6 +219,7 @@ export const usePosStore = create<PosState>((set, get) => ({
   isCashPayoutModalOpen: false,
   isMenuPriceModalOpen: false,
   isAdminAuthModalOpen: false,
+  isOpeningFloatModalOpen: false,
   adminAuthTitle: 'Admin Authorization Required',
   adminAuthPendingAction: null,
   printPreview: null,
@@ -216,6 +231,7 @@ export const usePosStore = create<PosState>((set, get) => ({
 
   init: () => {
     posDatabase.initDatabase();
+    const needsFloat = posDatabase.isOpeningFloatRequired();
     set({
       categories: posDatabase.getCategories(),
       menuItems: posDatabase.getMenuItems(),
@@ -224,6 +240,7 @@ export const usePosStore = create<PosState>((set, get) => ({
       recentOrders: posDatabase.getOrders(),
       cashTransactions: posDatabase.getCashTransactions(),
       priceAudits: posDatabase.getPriceAudits(),
+      isOpeningFloatModalOpen: needsFloat,
     });
   },
 
@@ -575,6 +592,41 @@ export const usePosStore = create<PosState>((set, get) => ({
 
   openZReport: () => set({ isZReportModalOpen: true }),
   closeZReport: () => set({ isZReportModalOpen: false }),
+
+  openOpeningFloatModal: () => set({ isOpeningFloatModalOpen: true }),
+  closeOpeningFloatModal: () => set({ isOpeningFloatModalOpen: false }),
+  isOpeningFloatRequired: () => posDatabase.isOpeningFloatRequired(),
+
+  setOpeningFloat: (amount, cashierName, notes, breakdown, kickDrawer = true, printSlip = true) => {
+    const adminName = get().currentUserRole === 'admin' ? 'Admin Manager' : 'Admin Supervisor';
+    const shift = posDatabase.setOpeningFloat(amount, adminName, cashierName, notes, breakdown);
+
+    if (kickDrawer) {
+      get().triggerDrawerKick(`Opening Float Rs. ${amount.toLocaleString()} set`);
+    }
+
+    if (printSlip) {
+      const builder = buildOpeningFloatSlipEscPos(shift, get().restaurant, adminName, breakdown);
+      set({
+        printPreview: {
+          title: `Opening Cash Float Voucher - Rs. ${amount.toLocaleString('en-LK')}`,
+          type: 'OPENING_FLOAT',
+          plainText: `Day Start Opening Float: Rs. ${amount.toLocaleString('en-LK')}`,
+          hexDump: builder.getHexDump(),
+          width: 80,
+          shiftData: shift,
+        }
+      });
+    }
+
+    set({
+      activeShift: shift,
+      isOpeningFloatModalOpen: false,
+      cashTransactions: posDatabase.getCashTransactions(),
+    });
+
+    return shift;
+  },
 
   closePrintPreview: () => set({ printPreview: null }),
   setPrintPreview: (preview) => set({ printPreview: preview }),

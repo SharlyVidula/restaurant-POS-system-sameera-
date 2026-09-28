@@ -12,7 +12,7 @@ import thermalLogo from '../../assets/thermal_logo.png';
 
 export const PrintPreviewModal: React.FC = () => {
   const { printPreview, closePrintPreview, restaurant } = usePosStore();
-  const [currentSlipType, setCurrentSlipType] = useState<'RECEIPT' | 'KOT' | 'BILL' | 'X_REPORT' | 'Z_REPORT' | 'PAYOUT_VOUCHER'>(
+  const [currentSlipType, setCurrentSlipType] = useState<'RECEIPT' | 'KOT' | 'BILL' | 'X_REPORT' | 'Z_REPORT' | 'PAYOUT_VOUCHER' | 'OPENING_FLOAT'>(
     printPreview?.type || 'RECEIPT'
   );
   const [printSuccessNotice, setPrintSuccessNotice] = useState(false);
@@ -619,6 +619,88 @@ export const PrintPreviewModal: React.FC = () => {
                     </div>
                     <div className="text-center italic text-[8px] pt-1">
                       Official Southern Spoon Cash Audit Record • Physical Drawer Released
+                    </div>
+                  </div>
+                </div>
+              ) : currentSlipType === 'OPENING_FLOAT' && printPreview.shiftData ? (
+                /* --- DAY START OPENING CASH FLOAT SLIP --- */
+                <div>
+                  <div className="text-center space-y-0.5 pb-2 flex flex-col items-center">
+                    <div className="mb-1 flex justify-center">
+                      <img 
+                        src={thermalLogo} 
+                        alt={restaurant.name} 
+                        className="w-20 h-20 object-contain mx-auto"
+                      />
+                    </div>
+                    <div className="font-extrabold text-sm tracking-wider uppercase">
+                      {restaurant.name}
+                    </div>
+                    <div className="text-[10px] text-gray-700">{restaurant.address}</div>
+                    <div className="text-[10px] text-gray-700">Tel: {restaurant.hotline}</div>
+                    <div className="text-xs font-black uppercase text-amber-900 border-2 border-amber-900 px-2 py-0.5 mt-1">
+                      *** DAY START OPENING FLOAT ***
+                    </div>
+                    <div className="border-b-2 border-dashed border-gray-900 my-2 w-full" />
+                  </div>
+
+                  <div className="space-y-1 text-[10px]">
+                    <div className="flex justify-between font-bold">
+                      <span>Register: {printPreview.shiftData.register_number}</span>
+                      <span>Shift #{printPreview.shiftData.id}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Date & Time:</span>
+                      <span>{printPreview.shiftData.float_set_at || new Date().toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Cashier on Duty:</span>
+                      <span className="font-bold">{printPreview.shiftData.cashier_name}</span>
+                    </div>
+                    <div className="flex justify-between font-bold">
+                      <span>Authorized By:</span>
+                      <span className="text-emerald-800 font-extrabold">{printPreview.shiftData.float_set_by || 'Admin Manager'}</span>
+                    </div>
+                    <div className="border-b border-dashed border-gray-800 my-1.5" />
+                  </div>
+
+                  {printPreview.shiftData.denomination_breakdown && (
+                    <div className="py-1 text-[10px] space-y-1">
+                      <div className="font-bold uppercase text-[9px] text-gray-600">Note Breakdown:</div>
+                      {Object.entries(printPreview.shiftData.denomination_breakdown).map(([denom, count]) => {
+                        if (count <= 0) return null;
+                        const noteVal = parseInt(denom, 10);
+                        const sub = isNaN(noteVal) ? count : noteVal * count;
+                        return (
+                          <div key={denom} className="flex justify-between">
+                            <span>{isNaN(noteVal) ? denom : `Rs. ${noteVal.toLocaleString()} x ${count}`}</span>
+                            <span className="font-mono">Rs. {sub.toLocaleString('en-LK')}</span>
+                          </div>
+                        );
+                      })}
+                      <div className="border-b border-dashed border-gray-800 my-1" />
+                    </div>
+                  )}
+
+                  <div className="py-2">
+                    <div className="flex justify-between items-center font-black text-sm text-black bg-amber-50 p-2 border border-amber-200 rounded">
+                      <span>OPENING CASH FLOAT:</span>
+                      <span className="font-mono font-black text-base text-amber-900">
+                        Rs. {printPreview.shiftData.opening_float.toLocaleString('en-LK', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Signatures */}
+                  <div className="border-t-2 border-dashed border-gray-900 pt-3 mt-2 text-[9px] space-y-3 text-gray-700">
+                    <div className="flex justify-between">
+                      <div>Cashier Sign: __________________</div>
+                    </div>
+                    <div className="flex justify-between">
+                      <div>Manager Sign: __________________</div>
+                    </div>
+                    <div className="text-center italic text-[8px] pt-1">
+                      Official Southern Spoon Day Start Record • Physical Drawer Verified
                     </div>
                   </div>
                 </div>

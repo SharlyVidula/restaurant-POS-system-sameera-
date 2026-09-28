@@ -132,6 +132,10 @@ export interface ShiftSession {
   notes?: string;
   total_payouts?: number;
   total_cash_in?: number;
+  is_float_set?: boolean;
+  float_set_by?: string;
+  float_set_at?: string;
+  denomination_breakdown?: Record<string, number>;
 }
 
 export interface CashTransaction {

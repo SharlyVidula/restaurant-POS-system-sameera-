@@ -34,6 +34,7 @@ const STORAGE_KEYS = {
   CASH_TXNS: 'galle_pos_cash_txns_v1',
   PRICE_AUDITS: 'galle_pos_price_audits_v1',
   ADMIN_PIN: 'galle_pos_admin_pin_v1',
+  LAST_FLOAT_DATE: 'galle_pos_last_float_date_v1',
 };
 
 class SQLiteLocalDatabase {
@@ -116,6 +117,7 @@ class SQLiteLocalDatabase {
     this.cashTransactions = [];
     this.priceAudits = [];
     this.adminPin = '9001';
+    localStorage.removeItem(STORAGE_KEYS.LAST_FLOAT_DATE);
     this.persistAll();
   }
 
@@ -391,13 +393,73 @@ class SQLiteLocalDatabase {
   public getActiveShift(): ShiftSession {
     let shift = this.shifts.find(s => s.id === this.activeShiftId);
     if (!shift) {
-      shift = { ...INITIAL_SHIFT, id: Date.now() };
+      shift = { ...INITIAL_SHIFT, id: Date.now(), is_float_set: false, opening_float: 0, cash_drawer_expected: 0 };
       this.shifts.push(shift);
       this.activeShiftId = shift.id;
       this.persistAll();
     }
     return shift;
   }
+
+  public isOpeningFloatRequired(): boolean {
+    const todayStr = new Date().toLocaleDateString('en-GB');
+    const lastFloatDate = localStorage.getItem(STORAGE_KEYS.LAST_FLOAT_DATE);
+    const shift = this.getActiveShift();
+
+    // If shift is closed, or float is explicitly not set yet
+    if (!shift || shift.status === 'closed') return true;
+    if (shift.is_float_set === false) return true;
+
+    // If opening float was never set or set on a previous calendar day
+    if (!lastFloatDate || lastFloatDate !== todayStr) return true;
+
+    return false;
+  }
+
+  public setOpeningFloat(
+    amount: number,
+    adminName: string = 'Admin Manager',
+    cashierName?: string,
+    notes?: string,
+    denominationBreakdown?: Record<string, number>
+  ): ShiftSession {
+    const todayStr = new Date().toLocaleDateString('en-GB');
+    const nowStr = todayStr + ' ' + new Date().toLocaleTimeString();
+    const shift = this.getActiveShift();
+
+    shift.opening_float = amount;
+    shift.is_float_set = true;
+    shift.float_set_by = adminName;
+    shift.float_set_at = nowStr;
+
+    if (denominationBreakdown) {
+      shift.denomination_breakdown = denominationBreakdown;
+    }
+    if (cashierName) {
+      shift.cashier_name = cashierName;
+    }
+    if (notes) {
+      shift.notes = (shift.notes ? shift.notes + ' | ' : '') + notes;
+    }
+
+    // Recalculate cash_drawer_expected: float + cash sales + cash in - payouts
+    shift.cash_drawer_expected = amount + (shift.cash_sales || 0) + (shift.total_cash_in || 0) - (shift.total_payouts || 0);
+
+    // Save today's float date
+    localStorage.setItem(STORAGE_KEYS.LAST_FLOAT_DATE, todayStr);
+
+    // Record in cash drawer logs for audit trail
+    this.drawerLogs.push({
+      id: Date.now(),
+      timestamp: new Date().toLocaleTimeString(),
+      reason: `[OPENING FLOAT SET] Rs. ${amount.toLocaleString('en-LK', { minimumFractionDigits: 2 })} (Admin: ${adminName})`,
+      cashier: shift.cashier_name,
+    });
+
+    this.persistAll();
+    return shift;
+  }
+
 
   public getXReportData(): XReportData {
     const shift = this.getActiveShift();
@@ -475,13 +537,13 @@ class SQLiteLocalDatabase {
       closing_cashier: closingCashier,
     };
 
-    // Open new shift automatically for next cashier/day
+    // Open new shift automatically for next cashier/day with pending opening float
     const nextShift: ShiftSession = {
       id: Date.now(),
       cashier_name: closingCashier,
       register_number: shift.register_number,
       branch_name: shift.branch_name,
-      opening_float: 15000.0,
+      opening_float: 0,
       opened_at: new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString(),
       status: 'open',
       total_sales: 0,
@@ -490,13 +552,15 @@ class SQLiteLocalDatabase {
       qr_sales: 0,
       total_discounts: 0,
       void_count: 0,
-      cash_drawer_expected: 15000.0,
+      cash_drawer_expected: 0,
       total_payouts: 0,
       total_cash_in: 0,
+      is_float_set: false,
     };
 
     this.shifts.push(nextShift);
     this.activeShiftId = nextShift.id;
+    localStorage.removeItem(STORAGE_KEYS.LAST_FLOAT_DATE);
 
     this.persistAll();
     return zReport;
