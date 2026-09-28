@@ -131,6 +131,12 @@ interface PosState {
     notes?: string, 
     modifiers?: CartItemModifier[]
   ) => void;
+  addBatchToCart: (
+    item: MenuItem, 
+    batch: Array<{ variant?: ItemVariant; quantity: number }>, 
+    notes?: string, 
+    modifiers?: CartItemModifier[]
+  ) => void;
   quickAddStepper: (item: MenuItem, delta: number) => void;
   updateCartQuantity: (cartItemId: string, delta: number) => void;
   removeCartItem: (cartItemId: string) => void;
@@ -267,48 +273,54 @@ export const usePosStore = create<PosState>((set, get) => ({
   openVariantModal: (item) => set({ variantModalItem: item }),
   closeVariantModal: () => set({ variantModalItem: null }),
 
-  addToCart: (item, variant, quantity = 1, notes = '', modifiers = []) => {
+  addBatchToCart: (item, batch, notes = '', modifiers = []) => {
     const state = get();
+    let currentCart = [...state.cart];
     const modifierTotal = modifiers.reduce((acc, m) => acc + m.price, 0);
-    const unitPrice = (item.base_price + (variant ? variant.price_adjustment : 0)) + modifierTotal;
-    
-    // Create unique key for same item + same variant + same modifiers + same notes
     const modifierKey = modifiers.map(m => m.name).sort().join('|');
-    const existingIndex = state.cart.findIndex(c => 
-      c.menu_item_id === item.id && 
-      c.variant_id === (variant?.id || undefined) &&
-      (c.notes || '') === notes &&
-      (c.modifiers || []).map(m => m.name).sort().join('|') === modifierKey
-    );
 
-    if (existingIndex > -1) {
-      const updatedCart = [...state.cart];
-      const existing = updatedCart[existingIndex];
-      const newQty = existing.quantity + quantity;
-      updatedCart[existingIndex] = {
-        ...existing,
-        quantity: newQty,
-        total_price: newQty * existing.unit_price,
-      };
-      set({ cart: updatedCart });
-    } else {
-      const newCartItem: CartItem = {
-        cart_item_id: `${item.id}-${variant?.id || 0}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        menu_item_id: item.id,
-        item_name: item.name,
-        variant_id: variant?.id,
-        variant_name: variant?.variant_name,
-        quantity,
-        unit_price: unitPrice,
-        total_price: unitPrice * quantity,
-        notes,
-        modifiers,
-        station: item.station || 'Kitchen',
-      };
-      set({ cart: [...state.cart, newCartItem] });
-    }
+    batch.forEach(({ variant, quantity }) => {
+      if (quantity <= 0) return;
+      const unitPrice = (item.base_price + (variant ? variant.price_adjustment : 0)) + modifierTotal;
+      
+      const existingIndex = currentCart.findIndex(c => 
+        c.menu_item_id === item.id && 
+        c.variant_id === (variant?.id || undefined) &&
+        (c.notes || '') === notes &&
+        (c.modifiers || []).map(m => m.name).sort().join('|') === modifierKey
+      );
 
-    set({ variantModalItem: null });
+      if (existingIndex > -1) {
+        const existing = currentCart[existingIndex];
+        const newQty = existing.quantity + quantity;
+        currentCart[existingIndex] = {
+          ...existing,
+          quantity: newQty,
+          total_price: newQty * existing.unit_price,
+        };
+      } else {
+        const newCartItem: CartItem = {
+          cart_item_id: `${item.id}-${variant?.id || 0}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          menu_item_id: item.id,
+          item_name: item.name,
+          variant_id: variant?.id,
+          variant_name: variant?.variant_name,
+          quantity,
+          unit_price: unitPrice,
+          total_price: unitPrice * quantity,
+          notes,
+          modifiers,
+          station: item.station || 'Kitchen',
+        };
+        currentCart.push(newCartItem);
+      }
+    });
+
+    set({ cart: currentCart, variantModalItem: null });
+  },
+
+  addToCart: (item, variant, quantity = 1, notes = '', modifiers = []) => {
+    get().addBatchToCart(item, [{ variant, quantity }], notes, modifiers);
   },
 
   quickAddStepper: (item, delta) => {
