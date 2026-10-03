@@ -8,6 +8,7 @@ import {
   GlassWater, 
   CupSoda, 
   Sparkles,
+  Cigarette,
   LayoutGrid,
   Search,
   X
@@ -48,6 +49,10 @@ export const CategoryTabs: React.FC = () => {
       case 'Extras':
       case 'Short Eats':
         return <Sparkles className="w-3.5 h-3.5 text-amber-400" />;
+      case 'Cigarettes':
+      case 'Cigarette':
+      case 'Tobacco':
+        return <Cigarette className="w-3.5 h-3.5 text-amber-400" />;
       default:
         return <LayoutGrid className="w-3.5 h-3.5" />;
     }

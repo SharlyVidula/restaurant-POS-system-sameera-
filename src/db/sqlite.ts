@@ -69,8 +69,25 @@ class SQLiteLocalDatabase {
       const storedShiftId = localStorage.getItem(STORAGE_KEYS.ACTIVE_SHIFT_ID);
 
       if (storedCategories && storedMenuItems) {
-        this.categories = JSON.parse(storedCategories);
-        this.menuItems = JSON.parse(storedMenuItems);
+        const parsedCategories: Category[] = JSON.parse(storedCategories);
+        const parsedMenuItems: MenuItem[] = JSON.parse(storedMenuItems);
+
+        // Auto-merge any newly added categories from seed data
+        const existingCatIds = new Set(parsedCategories.map(c => c.id));
+        const missingCats = INITIAL_CATEGORIES.filter(c => !existingCatIds.has(c.id));
+        this.categories = [...parsedCategories, ...missingCats];
+
+        // Auto-merge any newly added menu items from seed data
+        const existingItemIds = new Set(parsedMenuItems.map(i => i.id));
+        const missingItems = INITIAL_MENU_ITEMS.filter(i => !existingItemIds.has(i.id));
+        this.menuItems = [...parsedMenuItems, ...missingItems];
+
+        if (missingCats.length > 0) {
+          localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(this.categories));
+        }
+        if (missingItems.length > 0) {
+          localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(this.menuItems));
+        }
       } else {
         this.categories = [...INITIAL_CATEGORIES];
         this.menuItems = [...INITIAL_MENU_ITEMS];

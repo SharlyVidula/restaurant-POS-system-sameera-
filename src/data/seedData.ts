@@ -22,6 +22,7 @@ export const INITIAL_CATEGORIES: Category[] = [
   { id: 7, name: "Desserts", display_order: 7, icon: "Cookie", color: "bg-blue-600" },
   { id: 8, name: "Soft Drinks", display_order: 8, icon: "CupSoda", color: "bg-cyan-600" },
   { id: 9, name: "Extras", display_order: 9, icon: "Sparkles", color: "bg-amber-500" },
+  { id: 10, name: "Cigarettes", display_order: 10, icon: "Cigarette", color: "bg-slate-700" },
 ];
 
 export const INITIAL_MENU_ITEMS: MenuItem[] = [
@@ -144,6 +145,51 @@ export const INITIAL_MENU_ITEMS: MenuItem[] = [
       { id: 1016, menu_item_id: 108, variant_name: "Full Portion", price_adjustment: 500 }, // 1500
     ],
     default_notes: ["Crispy Egg On Top", "Saucy"],
+  },
+  {
+    id: 109,
+    category_id: 1,
+    name: "Chicken Nasi goreng",
+    base_price: 1000,
+    is_available: true,
+    description: "චිකන් නාසිගුරාන් - Indonesian style wok-fried rice with seasoned chicken cubes, fried egg, chili paste & garnish.",
+    station: "Wok Station",
+    badge: "Popular",
+    variants: [
+      { id: 1017, menu_item_id: 109, variant_name: "Half Portion", price_adjustment: 0 },
+      { id: 1018, menu_item_id: 109, variant_name: "Full Portion", price_adjustment: 600 }, // 1600
+    ],
+    default_notes: ["Sunny Egg", "Extra Chili Paste", "Spicy", "Less Spicy"],
+  },
+  {
+    id: 110,
+    category_id: 1,
+    name: "Sea food Nasi goreng",
+    base_price: 1200,
+    is_available: true,
+    description: "සී ෆුඩ් නාසිගුරාන් - Authentic Indonesian wok-fried rice with fresh prawns, cuttlefish, fish & fried egg.",
+    station: "Wok Station",
+    badge: "Special",
+    variants: [
+      { id: 1019, menu_item_id: 110, variant_name: "Half Portion", price_adjustment: 0 },
+      { id: 1020, menu_item_id: 110, variant_name: "Full Portion", price_adjustment: 500 }, // 1700
+    ],
+    default_notes: ["Sunny Egg", "Extra Chili Paste", "Spicy", "Extra Prawns"],
+  },
+  {
+    id: 111,
+    category_id: 1,
+    name: "Mix Nasi goreng",
+    base_price: 1300,
+    is_available: true,
+    description: "මික්ස් නාසිගුරාන් - Signature deluxe Indonesian fried rice with chicken, seafood, egg and rich spices.",
+    station: "Wok Station",
+    badge: "Chef Special",
+    variants: [
+      { id: 1021, menu_item_id: 111, variant_name: "Half Portion", price_adjustment: 0 },
+      { id: 1022, menu_item_id: 111, variant_name: "Full Portion", price_adjustment: 500 }, // 1800
+    ],
+    default_notes: ["Sunny Egg", "Extra Chili Paste", "Spicy", "All Meats"],
   },
 
   // ==========================================
@@ -629,6 +675,32 @@ export const INITIAL_MENU_ITEMS: MenuItem[] = [
     has_stepper: true,
     badge: "Fresh Egg",
     default_notes: ["Spicy", "No Chilies", "Extra Pepper"],
+  },
+
+  // ==========================================
+  // 10. CIGARETTES (සිගරට්)
+  // ==========================================
+  {
+    id: 951,
+    category_id: 10,
+    name: "Dunhill",
+    base_price: 170,
+    is_available: true,
+    description: "ඩන්හිල් සිගරට් - Premium Dunhill filter cigarette.",
+    station: "Beverage Bar",
+    has_stepper: true,
+    badge: "1 Stick",
+  },
+  {
+    id: 952,
+    category_id: 10,
+    name: "Gold Leaf",
+    base_price: 160,
+    is_available: true,
+    description: "ගෝල්ඩ් ලීෆ් සිගරට් - John Player Gold Leaf filter cigarette.",
+    station: "Beverage Bar",
+    has_stepper: true,
+    badge: "1 Stick",
   },
 ];
 
