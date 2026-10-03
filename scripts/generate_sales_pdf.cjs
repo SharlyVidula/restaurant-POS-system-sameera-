@@ -14,9 +14,9 @@ const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Southern Spoon POS - Product Overview & Commercial Proposal</title>
+  <title>Southern Spoon POS - 2-Page Commercial Sales Proposal & Offer</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap');
 
     @page {
       size: A4 portrait;
@@ -33,17 +33,18 @@ const htmlContent = `<!DOCTYPE html>
 
     body {
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      color: #1e293b;
+      color: #0f172a;
       background-color: #ffffff;
-      font-size: 9.5pt;
-      line-height: 1.45;
+      font-size: 8.8pt;
+      line-height: 1.4;
     }
 
     .page {
       width: 210mm;
       height: 297mm;
+      max-height: 297mm;
       position: relative;
-      padding: 18mm 20mm 16mm 20mm;
+      padding: 13mm 16mm 11mm 16mm;
       page-break-after: always;
       display: flex;
       flex-direction: column;
@@ -56,492 +57,293 @@ const htmlContent = `<!DOCTYPE html>
       page-break-after: avoid;
     }
 
-    /* Ambient Background Elements */
     .page-accent-top {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      height: 8px;
-      background: linear-gradient(90deg, #d97706 0%, #f59e0b 35%, #0284c7 100%);
+      height: 5px;
+      background: linear-gradient(90deg, #d97706 0%, #f59e0b 50%, #059669 100%);
     }
 
     .page-watermark {
       position: absolute;
-      bottom: 40mm;
-      right: -20mm;
-      font-size: 140pt;
+      right: -25px;
+      bottom: 25px;
+      font-size: 110pt;
       font-weight: 900;
-      color: #f1f5f9;
+      color: rgba(241, 245, 249, 0.55);
       z-index: 0;
-      pointer-events: none;
       user-select: none;
+      pointer-events: none;
       line-height: 1;
-      opacity: 0.7;
     }
 
     .content-layer {
       position: relative;
       z-index: 1;
-      flex: 1;
       display: flex;
       flex-direction: column;
+      height: 100%;
+      justify-content: space-between;
     }
 
-    /* Header */
+    /* Header Bar */
     .header-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 14px;
+      padding-bottom: 9px;
       border-bottom: 1.5px solid #e2e8f0;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
 
     .brand-group {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 10px;
     }
 
     .brand-logo {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
       object-fit: cover;
+      border: 1.5px solid #f59e0b;
+      background: #0f172a;
+      box-shadow: 0 3px 6px rgba(217, 119, 6, 0.2);
     }
 
     .brand-text h1 {
-      font-size: 15pt;
+      font-size: 13.5pt;
       font-weight: 800;
+      letter-spacing: -0.4px;
       color: #0f172a;
-      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    .brand-text h1 span {
+      color: #d97706;
     }
 
     .brand-text p {
-      font-size: 8pt;
+      font-size: 7.2pt;
+      color: #64748b;
       font-weight: 600;
-      color: #d97706;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.5px;
+      margin-top: 1px;
     }
 
-    .doc-meta {
+    .meta-badge-group {
       text-align: right;
     }
 
-    .doc-meta .badge {
+    .meta-badge {
       display: inline-block;
-      padding: 4px 10px;
-      background: #f8fafc;
-      border: 1px solid #cbd5e1;
-      border-radius: 20px;
-      font-size: 7.5pt;
-      font-weight: 700;
-      color: #334155;
+      background: #0f172a;
+      color: #f8fafc;
+      font-size: 6.8pt;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 5px;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.5px;
     }
 
-    .doc-meta .date {
-      font-size: 8pt;
+    .meta-sub {
+      font-size: 7pt;
       color: #64748b;
-      margin-top: 4px;
+      margin-top: 2px;
+      font-weight: 500;
     }
 
-    /* Footer */
-    .page-footer {
-      position: relative;
-      z-index: 1;
-      padding-top: 10px;
-      border-top: 1px solid #e2e8f0;
+    /* Hero Banner */
+    .hero-box {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #ffffff;
+      margin-bottom: 10px;
+      border-left: 4px solid #f59e0b;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 7.5pt;
-      color: #64748b;
+      gap: 12px;
     }
 
-    .page-footer .page-number {
-      font-weight: 600;
-      color: #0f172a;
-    }
-
-    /* Typography Utilities */
     .hero-title {
-      font-size: 23pt;
+      font-size: 11pt;
       font-weight: 800;
-      color: #0f172a;
-      line-height: 1.15;
-      letter-spacing: -0.03em;
-      margin-bottom: 8px;
+      color: #f8fafc;
+      letter-spacing: -0.2px;
     }
 
     .hero-title span {
-      background: linear-gradient(120deg, #d97706, #b45309);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #fbbf24;
     }
 
-    .hero-subtitle {
-      font-size: 10pt;
-      color: #475569;
-      line-height: 1.5;
-      margin-bottom: 22px;
-      max-width: 95%;
+    .hero-desc {
+      font-size: 7.4pt;
+      color: #cbd5e1;
+      margin-top: 2px;
+      line-height: 1.35;
     }
 
-    .section-heading {
+    .hero-pill {
+      background: rgba(245, 158, 11, 0.18);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+      padding: 4px 9px;
+      border-radius: 7px;
+      font-size: 7.2pt;
+      font-weight: 700;
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    /* Section Headings */
+    .section-head {
       display: flex;
       align-items: center;
+      gap: 7px;
+      margin-bottom: 7px;
+    }
+
+    .head-bar {
+      width: 4px;
+      height: 13px;
+      background: #d97706;
+      border-radius: 2px;
+    }
+
+    .head-title {
+      font-size: 9.5pt;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.2px;
+      text-transform: uppercase;
+    }
+
+    .head-tag {
+      font-size: 6.8pt;
+      color: #64748b;
+      font-weight: 600;
+      margin-left: auto;
+    }
+
+    /* 4-Pillar Grid */
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
       gap: 8px;
       margin-bottom: 10px;
     }
 
-    .section-heading .pill {
-      width: 4px;
-      height: 18px;
-      background: #f59e0b;
-      border-radius: 2px;
-    }
-
-    .section-heading h2 {
-      font-size: 11.5pt;
-      font-weight: 700;
-      color: #0f172a;
-      letter-spacing: -0.01em;
-    }
-
-    .section-heading p {
-      font-size: 7.5pt;
-      color: #64748b;
-      margin-left: auto;
-    }
-
-    /* Cards & Grids */
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .grid-3 {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-    }
-
-    .feature-card {
+    .card {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      border-radius: 10px;
-      padding: 9px 12px;
-      position: relative;
+      border-radius: 8px;
+      padding: 8px 10px;
     }
 
-    .feature-card.highlight {
-      background: #fefce8;
-      border-color: #fde047;
-    }
-
-    .feature-icon-title {
+    .card-top {
       display: flex;
       align-items: center;
-      gap: 9px;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .card-icon {
+      font-size: 11pt;
+    }
+
+    .card-title {
+      font-size: 8.2pt;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .card-text {
+      font-size: 7.2pt;
+      color: #475569;
+      line-height: 1.35;
+    }
+
+    /* Spotlight Box for Newly Added Feature */
+    .spotlight-box {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 40%, #ecfdf5 100%);
+      border: 1.5px solid #f59e0b;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 8px rgba(217, 119, 6, 0.08);
+    }
+
+    .spotlight-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 6px;
     }
 
-    .icon-box {
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11pt;
-      background: #ffffff;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.04);
-      border: 1px solid #e2e8f0;
-    }
-
-    .feature-icon-title h3 {
-      font-size: 9.5pt;
-      font-weight: 700;
-      color: #0f172a;
-    }
-
-    .feature-card p {
-      font-size: 8pt;
-      color: #475569;
-      line-height: 1.45;
-    }
-
-    .feature-card ul {
-      margin-top: 6px;
-      padding-left: 14px;
-      font-size: 7.8pt;
-      color: #334155;
-    }
-
-    .feature-card ul li {
-      margin-bottom: 3px;
-    }
-
-    /* Metric Banners */
-    .metrics-banner {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      background: #0f172a;
-      border-radius: 12px;
-      padding: 14px 16px;
-      color: #ffffff;
-      margin-bottom: 20px;
-    }
-
-    .metric-item {
-      border-right: 1px solid #334155;
-      padding-right: 10px;
-    }
-
-    .metric-item:last-child {
-      border-right: none;
-      padding-right: 0;
-    }
-
-    .metric-val {
-      font-size: 14pt;
-      font-weight: 800;
-      color: #fbbf24;
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .metric-lbl {
-      font-size: 7pt;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #94a3b8;
-      margin-top: 2px;
-      font-weight: 600;
-    }
-
-    /* Comparison & Pricing */
-    .pricing-container {
-      display: grid;
-      grid-template-columns: 1fr 1.08fr;
-      gap: 16px;
-      margin-top: 10px;
-      align-items: stretch;
-    }
-
-    .pricing-card {
-      border-radius: 14px;
-      padding: 20px 22px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      position: relative;
-      background: #ffffff;
-      border: 1.5px solid #e2e8f0;
-    }
-
-    .pricing-card.premium {
-      background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
-      border: 2px solid #f59e0b;
-      box-shadow: 0 10px 25px rgba(245, 158, 11, 0.12);
-    }
-
-    .popular-tag {
-      position: absolute;
-      top: -11px;
-      right: 20px;
-      background: linear-gradient(90deg, #d97706, #f59e0b);
-      color: #ffffff;
-      font-size: 7pt;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      padding: 3px 12px;
-      border-radius: 20px;
-      box-shadow: 0 2px 6px rgba(217, 119, 6, 0.3);
-    }
-
-    .plan-header {
-      margin-bottom: 12px;
-    }
-
-    .plan-title {
-      font-size: 12pt;
-      font-weight: 800;
-      color: #0f172a;
-    }
-
-    .plan-subtitle {
-      font-size: 8pt;
-      color: #64748b;
-      margin-top: 2px;
-    }
-
-    .price-block {
-      display: flex;
-      align-items: baseline;
-      gap: 4px;
-      margin: 12px 0 14px 0;
-    }
-
-    .price-curr {
-      font-size: 11pt;
-      font-weight: 700;
-      color: #0f172a;
-    }
-
-    .price-amount {
-      font-size: 24pt;
-      font-weight: 900;
-      color: #0f172a;
-      letter-spacing: -0.03em;
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .price-term {
-      font-size: 8.5pt;
-      color: #64748b;
-      font-weight: 600;
-    }
-
-    .savings-badge {
-      display: inline-block;
-      background: #ecfdf5;
-      color: #059669;
-      border: 1px solid #a7f3d0;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 7.5pt;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-
-    .plan-features {
-      list-style: none;
-      padding: 0;
-      margin-bottom: 16px;
-    }
-
-    .plan-features li {
-      font-size: 8pt;
-      color: #334155;
-      margin-bottom: 7px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .plan-features li .check {
-      color: #10b981;
-      font-weight: 800;
-      font-size: 9pt;
-    }
-
-    .btn-placeholder {
-      display: block;
-      width: 100%;
-      text-align: center;
-      padding: 9px;
-      border-radius: 8px;
-      font-size: 8.5pt;
-      font-weight: 700;
-      text-decoration: none;
-    }
-
-    .btn-outline {
-      background: #f8fafc;
-      border: 1.5px solid #cbd5e1;
-      color: #334155;
-    }
-
-    .btn-solid {
+    .spotlight-tag {
       background: #d97706;
-      border: 1.5px solid #d97706;
       color: #ffffff;
-    }
-
-    /* Comparison Table */
-    .specs-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      font-size: 8pt;
-    }
-
-    .specs-table th {
-      background: #f1f5f9;
-      text-align: left;
-      padding: 5px 8px;
-      color: #334155;
-      font-weight: 700;
-      border-bottom: 2px solid #cbd5e1;
-    }
-
-    .specs-table td {
-      padding: 5px 8px;
-      border-bottom: 1px solid #f1f5f9;
-      color: #475569;
-    }
-
-    .specs-table tr:nth-child(even) td {
-      background: #fafafa;
-    }
-
-    .specs-table td.strong {
-      font-weight: 600;
-      color: #0f172a;
-    }
-
-    .tag-badge {
-      display: inline-block;
+      font-size: 6.5pt;
+      font-weight: 800;
       padding: 2px 6px;
       border-radius: 4px;
-      font-size: 6.8pt;
-      font-weight: 700;
       text-transform: uppercase;
+      letter-spacing: 0.4px;
     }
 
-    .tag-green { background: #dcfce7; color: #15803d; }
-    .tag-amber { background: #fef3c7; color: #b45309; }
-    .tag-blue { background: #e0f2fe; color: #0369a1; }
-
-    .callout-box {
-      background: #f8fafc;
-      border-left: 4px solid #f59e0b;
-      padding: 10px 14px;
-      border-radius: 0 8px 8px 0;
-      margin: 12px 0;
+    .spotlight-title {
+      font-size: 9.5pt;
+      font-weight: 800;
+      color: #92400e;
     }
 
-    .callout-box h4 {
-      font-size: 8.5pt;
-      font-weight: 700;
-      color: #0f172a;
+    .spotlight-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .spotlight-item {
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid #fde68a;
+      border-radius: 6px;
+      padding: 6px 8px;
+    }
+
+    .spotlight-item h4 {
+      font-size: 7.6pt;
+      font-weight: 800;
+      color: #78350f;
+      display: flex;
+      align-items: center;
+      gap: 4px;
       margin-bottom: 2px;
     }
 
-    .callout-box p {
-      font-size: 7.8pt;
-      color: #475569;
-      line-height: 1.4;
+    .spotlight-item p {
+      font-size: 6.8pt;
+      color: #451a03;
+      line-height: 1.3;
     }
 
-    /* Flow Graphic */
+    /* Workflow Strip */
     .workflow-strip {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 10px;
-      padding: 10px 14px;
-      margin: 14px 0;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 7px 10px;
+      margin-bottom: 8px;
     }
 
     .workflow-step {
@@ -550,42 +352,313 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     .step-circle {
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       background: #0f172a;
       color: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 7.5pt;
-      font-weight: 700;
-      margin: 0 auto 4px auto;
+      font-size: 6.8pt;
+      font-weight: 800;
+      margin: 0 auto 3px auto;
     }
 
     .step-name {
-      font-size: 7.5pt;
-      font-weight: 700;
+      font-size: 7.2pt;
+      font-weight: 800;
       color: #0f172a;
     }
 
     .step-desc {
-      font-size: 6.8pt;
+      font-size: 6.3pt;
       color: #64748b;
     }
 
     .workflow-arrow {
-      color: #cbd5e1;
+      color: #94a3b8;
+      font-size: 9pt;
+      font-weight: 800;
+      padding: 0 4px;
+    }
+
+    /* Page Footer */
+    .page-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 7px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 6.8pt;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .page-number {
+      font-weight: 700;
+      color: #475569;
+    }
+
+    /* ========================================================================= */
+    /* PAGE 2 STYLES: PRICING & TURNKEY OFFER                                   */
+    /* ========================================================================= */
+    .pricing-container {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .price-box {
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .price-box.standard {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+    }
+
+    .price-box.annual {
+      background: #ffffff;
+      border: 2px solid #d97706;
+      box-shadow: 0 4px 14px rgba(217, 119, 6, 0.14);
+    }
+
+    .badge-pop {
+      position: absolute;
+      top: -10px;
+      right: 14px;
+      background: linear-gradient(90deg, #d97706, #f59e0b);
+      color: #ffffff;
+      font-size: 6.5pt;
+      font-weight: 800;
+      padding: 2.5px 8px;
+      border-radius: 12px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .plan-title {
       font-size: 11pt;
-      font-weight: bold;
-      padding: 0 6px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .plan-sub {
+      font-size: 7.2pt;
+      color: #64748b;
+      margin-top: 1px;
+    }
+
+    .price-num-row {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      margin: 8px 0 4px 0;
+    }
+
+    .price-lkr {
+      font-size: 9pt;
+      font-weight: 700;
+      color: #64748b;
+    }
+
+    .price-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20pt;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1;
+    }
+
+    .price-term {
+      font-size: 8pt;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    .savings-pill {
+      display: inline-block;
+      background: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 6.8pt;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .feat-list {
+      list-style: none;
+      margin-bottom: 10px;
+    }
+
+    .feat-list li {
+      font-size: 7.2pt;
+      color: #334155;
+      margin-bottom: 4.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .feat-list li .check-green {
+      color: #10b981;
+      font-weight: 800;
+      font-size: 8.5pt;
+    }
+
+    .btn-plan {
+      display: block;
+      text-align: center;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 7.8pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-plan.outline {
+      background: #f1f5f9;
+      border: 1.5px solid #cbd5e1;
+      color: #334155;
+    }
+
+    .btn-plan.solid {
+      background: linear-gradient(90deg, #d97706, #f59e0b);
+      border: 1.5px solid #d97706;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25);
+    }
+
+    /* Comparison Table */
+    .specs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 7.2pt;
+      margin-bottom: 10px;
+    }
+
+    .specs-table th {
+      background: #f1f5f9;
+      text-align: left;
+      padding: 4.5px 8px;
+      color: #334155;
+      font-weight: 800;
+      border-bottom: 1.5px solid #cbd5e1;
+    }
+
+    .specs-table td {
+      padding: 4.5px 8px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #475569;
+    }
+
+    .specs-table tr:nth-child(even) td {
+      background: #fafafa;
+    }
+
+    .specs-table td.b {
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .tag-badge {
+      display: inline-block;
+      padding: 1.5px 5px;
+      border-radius: 4px;
+      font-size: 6.2pt;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .tag-green { background: #dcfce7; color: #15803d; }
+    .tag-blue { background: #e0f2fe; color: #0369a1; }
+    .tag-amber { background: #fef3c7; color: #b45309; }
+
+    /* 3-Step Handover */
+    .steps-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .step-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 7px;
+      padding: 7px 9px;
+    }
+
+    .step-card h4 {
+      font-size: 7.5pt;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 2px;
+    }
+
+    .step-card p {
+      font-size: 6.6pt;
+      color: #475569;
+      line-height: 1.35;
+    }
+
+    /* Bottom Contact Bar */
+    .contact-banner {
+      background: #0f172a;
+      border-radius: 9px;
+      padding: 9px 14px;
+      color: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-left: 4px solid #f59e0b;
+    }
+
+    .contact-left h3 {
+      font-size: 8.8pt;
+      font-weight: 800;
+      color: #fbbf24;
+    }
+
+    .contact-left p {
+      font-size: 6.8pt;
+      color: #94a3b8;
+      margin-top: 1px;
+    }
+
+    .contact-right {
+      text-align: right;
+    }
+
+    .hotline-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11pt;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    .location-text {
+      font-size: 6.8pt;
+      color: #cbd5e1;
+      margin-top: 1px;
     }
   </style>
 </head>
 <body>
 
   <!-- ===================================================================== -->
-  <!-- PAGE 1: EXECUTIVE OVERVIEW & ARCHITECTURAL FOUNDATION                 -->
+  <!-- PAGE 1 OF 2: SYSTEM CAPABILITIES & INVENTORY ENGINE SPOTLIGHT         -->
   <!-- ===================================================================== -->
   <div class="page">
     <div class="page-accent-top"></div>
@@ -595,450 +668,338 @@ const htmlContent = `<!DOCTYPE html>
       <!-- Top Brand Header -->
       <div class="header-bar">
         <div class="brand-group">
-          ${logoBase64 ? `<img src="${logoBase64}" class="brand-logo" alt="Logo" />` : ''}
+          ${logoBase64 ? `<img src="${logoBase64}" alt="Southern Spoon Logo" class="brand-logo" />` : ''}
           <div class="brand-text">
-            <h1>Southern Spoon POS</h1>
-            <p>High-Performance Restaurant POS System</p>
+            <h1>SOUTHERN <span>SPOON</span></h1>
+            <p>Labuduwa, Galle • Complete Offline Restaurant POS</p>
           </div>
         </div>
-        <div class="doc-meta">
-          <span class="badge">Commercial Proposal & Specs</span>
-          <div class="date">Edition: 2026 / 2027 • Labuduwa, Galle</div>
+        <div class="meta-badge-group">
+          <span class="meta-badge">Commercial Proposal &amp; Sales Offer</span>
+          <div class="meta-sub">Ref: SS-POS-2026-V2 • Single Hotline Edition</div>
         </div>
       </div>
 
-      <!-- Hero Header -->
-      <div class="hero-title">
-        The Rock-Solid POS Built for <span>Speed, Zero Downtime & High Profits</span>.
-      </div>
-      <div class="hero-subtitle">
-        Engineered specifically for busy Sri Lankan restaurants, cafes, and multi-station kitchens. Combining desktop-grade speed with local SQLite persistence and live Google Sheets cloud synchronization — guaranteeing non-stop operations even when your internet drops.
-      </div>
-
-      <!-- 4 Core Metrics -->
-      <div class="metrics-banner">
-        <div class="metric-item">
-          <div class="metric-val">100%</div>
-          <div class="metric-lbl">Offline-First Uptime</div>
-        </div>
-        <div class="metric-item">
-          <div class="metric-val">&lt; 0.1s</div>
-          <div class="metric-lbl">Instant Billing Latency</div>
-        </div>
-        <div class="metric-item">
-          <div class="metric-val">Dual</div>
-          <div class="metric-lbl">Receipt &amp; Kitchen KOT</div>
-        </div>
-        <div class="metric-item">
-          <div class="metric-val">Live</div>
-          <div class="metric-lbl">Cloud Google Sync</div>
-        </div>
-      </div>
-
-      <!-- Section: Why Solid? -->
-      <div class="section-heading">
-        <div class="pill"></div>
-        <h2>Why Southern Spoon POS Outperforms Cloud-Only Systems</h2>
-        <p>Architectural Superiority</p>
-      </div>
-
-      <div class="grid-2">
-        <div class="feature-card highlight">
-          <div class="feature-icon-title">
-            <div class="icon-box">⚡</div>
-            <h3>100% Zero-Latency Offline Independence</h3>
-          </div>
-          <p>
-            Unlike web-based POS software that stalls or crashes whenever Dialog, Mobitel, or SLT fiber experiences outages, Southern Spoon POS runs directly on your local Windows PC with SQLite local persistence. Orders are created, settled, and printed with instantaneous speed, zero loading spinners, and total privacy.
-          </p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon-title">
-            <div class="icon-box">☁️</div>
-            <h3>Live Cloud Mirroring (Owner Mobile Dashboard)</h3>
-          </div>
-          <p>
-            You get the reliability of local hardware PLUS the freedom of cloud monitoring. Every settled bill automatically syncs in real-time to your secure Google Sheet. Track live itemized portions, daily revenue, and payment breakdowns directly from your smartphone wherever you are in the world.
-          </p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon-title">
-            <div class="icon-box">🖨️</div>
-            <h3>Direct ESC/POS Thermal Printing &amp; Drawer Kick</h3>
-          </div>
-          <p>
-            Native raw ESC/POS integration for standard 80mm and 58mm thermal receipt printers. Automatically pulses the 24V RJ11 solenoid to pop open the cash drawer immediately upon cash settlement. Includes station-routed Kitchen Order Tickets (KOT) for direct chef dispatch.
-          </p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon-title">
-            <div class="icon-box">🛡️</div>
-            <h3>Shift Audits &amp; Anti-Theft Security</h3>
-          </div>
-          <p>
-            Prevent cashier revenue leaks with mid-shift X-Reports, blind cash drawer closing declarations, automated over/short calculation in end-of-day Z-Reports, and master PIN security on discounts, voids, drawer kicks, and menu price modifications.
-          </p>
-        </div>
-      </div>
-
-      <!-- Quick Operational Flow -->
-      <div class="workflow-strip">
-        <div class="workflow-step">
-          <div class="step-circle">1</div>
-          <div class="step-name">Punch Order</div>
-          <div class="step-desc">Portion / Steppers / Notes</div>
-        </div>
-        <div class="workflow-arrow">→</div>
-        <div class="workflow-step">
-          <div class="step-circle">2</div>
-          <div class="step-name">Kitchen KOT</div>
-          <div class="step-desc">Auto-routes to Wok/Bar</div>
-        </div>
-        <div class="workflow-arrow">→</div>
-        <div class="workflow-step">
-          <div class="step-circle">3</div>
-          <div class="step-name">Quick Settlement</div>
-          <div class="step-desc">Cash notes / Card / LankaQR</div>
-        </div>
-        <div class="workflow-arrow">→</div>
-        <div class="workflow-step">
-          <div class="step-circle">4</div>
-          <div class="step-name">Print &amp; Kick Drawer</div>
-          <div class="step-desc">Thermal slip + RJ11 pulse</div>
-        </div>
-        <div class="workflow-arrow">→</div>
-        <div class="workflow-step">
-          <div class="step-circle">5</div>
-          <div class="step-name">Owner Cloud Sync</div>
-          <div class="step-desc">Instant Google Sheet update</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="page-footer">
-      <span>Southern Spoon POS System • Confidential Commercial Proposal</span>
-      <span class="page-number">Page 1 of 3</span>
-    </div>
-  </div>
-
-  <!-- ===================================================================== -->
-  <!-- PAGE 2: DEEP DIVE INTO MODULES & POWERFUL CAPABILITIES                -->
-  <!-- ===================================================================== -->
-  <div class="page">
-    <div class="page-accent-top"></div>
-    <div class="page-watermark">FEATURES</div>
-
-    <div class="content-layer">
-      <!-- Header -->
-      <div class="header-bar">
-        <div class="brand-group">
-          ${logoBase64 ? `<img src="${logoBase64}" class="brand-logo" alt="Logo" />` : ''}
-          <div class="brand-text">
-            <h1>Comprehensive Features &amp; Modules</h1>
-            <p>Every tool your restaurant staff and management need</p>
-          </div>
-        </div>
-        <div class="doc-meta">
-          <span class="badge">Functional Matrix</span>
-          <div class="date">Edition: 2026 / 2027</div>
-        </div>
-      </div>
-
-      <!-- Feature Grid: 6 Pillars -->
-      <div class="section-heading">
-        <div class="pill"></div>
-        <h2>The 6 Pillars of Operational Excellence</h2>
-        <p>Built for Speed &amp; Accuracy</p>
-      </div>
-
-      <div class="grid-2" style="gap: 12px;">
-        <!-- 1. Billing -->
-        <div class="feature-card">
-          <div class="feature-icon-title">
-            <div class="icon-box">⚡</div>
-            <h3>1. Speed-Touch Order Terminal</h3>
-          </div>
-          <ul>
-            <li><strong>Portion Architecture:</strong> Full and Half portion selection with automatic variant pricing.</li>
-            <li><strong>Fast Counter Steppers:</strong> Instant <code>+1</code>, <code>+2</code>, <code>+5</code> buttons for fast-moving items like Short Eats, Soft Drinks, and Cigarettes (Dunhill, Gold Leaf).</li>
-            <li><strong>Custom Kitchen Directives:</strong> Preset modifiers (Extra Spicy, Less Chili, Sunny Egg on top) + freeform special request notes.</li>
-            <li><strong>Dynamic Search &amp; Category Filters:</strong> Instant search by Sinhala or English name; categorized tabs with intuitive iconography.</li>
-          </ul>
-        </div>
-
-        <!-- 2. Hardware -->
-        <div class="feature-card">
-          <div class="feature-icon-title">
-            <div class="icon-box">🖨️</div>
-            <h3>2. Hardware &amp; Thermal Printing</h3>
-          </div>
-          <ul>
-            <li><strong>Thermal Receipt Engine:</strong> Clean 80mm &amp; 58mm layouts with restaurant header, hotline, VAT/tax details, and customer Wi-Fi credentials.</li>
-            <li><strong>Multi-Station KOT Dispatch:</strong> Smartly categorizes and tags food tickets for <code>Wok Station</code>, <code>Kottu Griddle</code>, <code>Beverage Bar</code>, and <code>Curry Counter</code>.</li>
-            <li><strong>RJ11 Cash Drawer Auto-Kick:</strong> Sends hardware solenoid trigger pulse (<code>ESC p 0 25 250</code>) on cash settlement.</li>
-            <li><strong>On-Screen Thermal Previewer:</strong> Inspect receipt formatting and reprints directly in the UI before cutting paper.</li>
-          </ul>
-        </div>
-
-        <!-- 3. Tables & Zones -->
-        <div class="feature-card">
-          <div class="feature-icon-title">
-            <div class="icon-box">🪑</div>
-            <h3>3. Table &amp; Dining Floor Engine</h3>
-          </div>
-          <ul>
-            <li><strong>3-Zone Visual Layout:</strong> Courtyard Garden, Main Dining Hall, and AC Lounge.</li>
-            <li><strong>Isolated Table Sessions:</strong> Keep tabs open for dining parties, continuously add courses, and view running bill total and seated duration timer.</li>
-            <li><strong>Flexible Channels:</strong> Instant toggle between <em>Dine-In</em>, <em>Takeaway</em>, and <em>Delivery</em> orders with zero confusion.</li>
-            <li><strong>Occupancy Status:</strong> Real-time color indicators: Vacant (Emerald), Occupied (Amber), Billed (Cyan).</li>
-          </ul>
-        </div>
-
-        <!-- 4. Payments -->
-        <div class="feature-card">
-          <div class="feature-icon-title">
-            <div class="icon-box">💳</div>
-            <h3>4. Sri Lankan Currency Cashier Desk</h3>
-          </div>
-          <ul>
-            <li><strong>One-Tap Tender Buttons:</strong> <code>+Rs. 5,000</code>, <code>+Rs. 2,000</code>, <code>+Rs. 1,000</code>, <code>+Rs. 500</code>, <code>+Rs. 100</code>, and <code>Exact Amount</code>.</li>
-            <li><strong>Zero-Error Balance Calculation:</strong> Displays change due in large high-contrast numerals to eliminate manual arithmetic errors.</li>
-            <li><strong>Multi-Payment Readiness:</strong> Seamlessly split or switch between Cash, Visa/Mastercard (with terminal auth ref), and LankaQR.</li>
-            <li><strong>Discounts &amp; Charges:</strong> Configurable percentage/fixed bill discounts with service charge toggle.</li>
-          </ul>
-        </div>
-
-        <!-- 5. Shifts & Audit -->
-        <div class="feature-card">
-          <div class="feature-icon-title">
-            <div class="icon-box">📊</div>
-            <h3>5. Shift Balancing &amp; Fiscal X/Z Reports</h3>
-          </div>
-          <ul>
-            <li><strong>Morning Opening Float:</strong> Cashier registers starting cash float with timestamp verification.</li>
-            <li><strong>Mid-Shift X-Report:</strong> Instant audit slip showing sales-to-moment without closing register.</li>
-            <li><strong>End-of-Day Z-Report:</strong> Blind cash drawer declaration; POS compares physical count against expected cash and prints official Over/Short audit slips.</li>
-            <li><strong>Historical Shift Archive:</strong> Complete record of past cashier registers and reconciliations.</li>
-          </ul>
-        </div>
-
-        <!-- 6. Cloud & Security -->
-        <div class="feature-card">
-          <div class="feature-icon-title">
-            <div class="icon-box">🔐</div>
-            <h3>6. Anti-Theft Security &amp; Live Cloud Sync</h3>
-          </div>
-          <ul>
-            <li><strong>Master PIN Protection (9001):</strong> Protects menu price changes, cash drawer manual open, voided orders, and shift closures.</li>
-            <li><strong>Price Audit Trail:</strong> Logs old price, new price, date, and cashier identity on any price modification.</li>
-            <li><strong>Live Google Sheets Sync:</strong> Automated background POST of itemized sales (Item name, portion, quantity, bill total, running cumulative sum).</li>
-            <li><strong>Excel / CSV Data Export:</strong> One-click export for accountants and tax auditors.</li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- Hardware Specs Table -->
-      <div class="section-heading" style="margin-top: 14px;">
-        <div class="pill"></div>
-        <h2>System Compatibility &amp; Requirements</h2>
-      </div>
-
-      <table class="specs-table">
-        <thead>
-          <tr>
-            <th>Component</th>
-            <th>Supported Specifications</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="strong">Computer / POS Terminal</td>
-            <td>Windows 10, Windows 11 (64-bit). PC, Laptop, All-in-One Touch POS (Core i3/i5, 4GB+ RAM)</td>
-            <td><span class="tag-badge tag-green">Fully Compatible</span></td>
-          </tr>
-          <tr>
-            <td class="strong">Thermal Printers</td>
-            <td>Any standard ESC/POS USB or Serial Printer (80mm / 58mm). Epson, Xprinter, Rongta, Bixolon, Sunmi</td>
-            <td><span class="tag-badge tag-green">Native Support</span></td>
-          </tr>
-          <tr>
-            <td class="strong">Cash Drawers</td>
-            <td>Standard 12V / 24V RJ11 interface connected to thermal receipt printer</td>
-            <td><span class="tag-badge tag-green">Auto-Kick</span></td>
-          </tr>
-          <tr>
-            <td class="strong">Network &amp; Internet</td>
-            <td>Operates 100% offline. Internet (Wi-Fi/LAN/Dongle) only needed for Google Sheets live syncing</td>
-            <td><span class="tag-badge tag-blue">Offline-First</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Footer -->
-    <div class="page-footer">
-      <span>Southern Spoon POS System • Technical Specifications</span>
-      <span class="page-number">Page 2 of 3</span>
-    </div>
-  </div>
-
-  <!-- ===================================================================== -->
-  <!-- PAGE 3: COMMERCIAL PRICING, VALUE PROPOSITION & ONBOARDING            -->
-  <!-- ===================================================================== -->
-  <div class="page">
-    <div class="page-accent-top"></div>
-    <div class="page-watermark">PRICING</div>
-
-    <div class="content-layer">
-      <!-- Header -->
-      <div class="header-bar">
-        <div class="brand-group">
-          ${logoBase64 ? `<img src="${logoBase64}" class="brand-logo" alt="Logo" />` : ''}
-          <div class="brand-text">
-            <h1>Investment &amp; Licensing Plans</h1>
-            <p>Simple, transparent, and high-return pricing with zero hidden fees</p>
-          </div>
-        </div>
-        <div class="doc-meta">
-          <span class="badge">Official Pricing</span>
-          <div class="date">Valid: 2026 / 2027</div>
-        </div>
-      </div>
-
-      <!-- Value Statement -->
-      <div class="callout-box">
-        <h4>High Return on Investment (ROI)</h4>
-        <p>
-          By preventing kitchen billing omissions, stopping unauthorized cash drawer access, and speeding up table turnover during peak rush hours, this system typically saves mid-sized restaurants over <strong>Rs. 25,000 – Rs. 50,000 per month</strong> in recovered revenue.
-        </p>
-      </div>
-
-      <!-- Pricing Plans -->
-      <div class="pricing-container">
-        <!-- Monthly Plan -->
-        <div class="pricing-card">
-          <div>
-            <div class="plan-header">
-              <div class="plan-title">Monthly Flex Plan</div>
-              <div class="plan-subtitle">Ideal for new startups &amp; seasonal operations</div>
-            </div>
-
-            <div class="price-block">
-              <span class="price-curr">LKR</span>
-              <span class="price-amount">5,000</span>
-              <span class="price-term">/ month</span>
-            </div>
-
-            <p style="font-size: 8pt; color: #64748b; margin-bottom: 14px;">
-              Pay month-to-month with total flexibility. Cancel or upgrade anytime with zero penalties.
-            </p>
-
-            <ul class="plan-features">
-              <li><span class="check">✓</span> Complete Offline POS System &amp; Desktop App</li>
-              <li><span class="check">✓</span> 80mm &amp; 58mm ESC/POS Thermal Printing</li>
-              <li><span class="check">✓</span> RJ11 Cash Drawer Auto-Kick Integration</li>
-              <li><span class="check">✓</span> Kitchen KOT Station Routing (Wok/Bar)</li>
-              <li><span class="check">✓</span> Live Google Sheets Cloud Mirroring</li>
-              <li><span class="check">✓</span> Shift Management, X-Reports &amp; Z-Reports</li>
-              <li><span class="check">✓</span> Standard Technical Support (9 AM – 6 PM)</li>
-            </ul>
-          </div>
-
-          <div>
-            <div class="btn-placeholder btn-outline">Select Monthly Plan</div>
-          </div>
-        </div>
-
-        <!-- Annual Plan (Recommended) -->
-        <div class="pricing-card premium">
-          <div class="popular-tag">MOST POPULAR • SAVE 33%</div>
-          <div>
-            <div class="plan-header">
-              <div class="plan-title">Annual Enterprise Plan</div>
-              <div class="plan-subtitle">Maximum value, peace of mind &amp; VIP support</div>
-            </div>
-
-            <div class="price-block">
-              <span class="price-curr">LKR</span>
-              <span class="price-amount">40,000</span>
-              <span class="price-term">/ year</span>
-            </div>
-
-            <div class="savings-badge">
-              🎉 Instant Savings of LKR 20,000 / Year (Only ~3,333 LKR/mo)
-            </div>
-
-            <ul class="plan-features">
-              <li><span class="check">✓</span> <strong>Everything included in the Monthly Plan</strong></li>
-              <li><span class="check">✓</span> <strong>1 Full Year of Unlimited Licensing &amp; Usage</strong></li>
-              <li><span class="check">✓</span> <strong>Free Initial Menu Setup &amp; Custom Category Configuration</strong></li>
-              <li><span class="check">✓</span> <strong>Priority 24/7 Phone &amp; Remote WhatsApp Support</strong></li>
-              <li><span class="check">✓</span> <strong>On-Site or Remote Staff Cashier Training</strong></li>
-              <li><span class="check">✓</span> <strong>Free Software Updates, Feature Enhancements &amp; Patches</strong></li>
-              <li><span class="check">✓</span> <strong>Guaranteed Renewal Price Lock for 2 Years</strong></li>
-            </ul>
-          </div>
-
-          <div>
-            <div class="btn-placeholder btn-solid">Choose Annual Plan (Recommended)</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- What's Included / Onboarding Next Steps -->
-      <div class="section-heading" style="margin-top: 18px;">
-        <div class="pill"></div>
-        <h2>Fast 3-Step Deployment &amp; Handover</h2>
-        <p>Zero Downtime Transition</p>
-      </div>
-
-      <div class="grid-3" style="gap: 10px;">
-        <div class="feature-card" style="padding: 10px 12px;">
-          <h3 style="font-size: 8.8pt; color: #0f172a; margin-bottom: 4px;">Step 1: Setup &amp; Menu Load</h3>
-          <p style="font-size: 7.6pt; color: #475569;">
-            We install the desktop system on your POS PC, load your complete food &amp; beverage menu with portion pricing, and configure your Google Sheets cloud sync.
-          </p>
-        </div>
-
-        <div class="feature-card" style="padding: 10px 12px;">
-          <h3 style="font-size: 8.8pt; color: #0f172a; margin-bottom: 4px;">Step 2: Hardware Pairing</h3>
-          <p style="font-size: 7.6pt; color: #475569;">
-            We calibrate your 80mm/58mm thermal printers, test KOT kitchen dispatch, set up the cash drawer kick solenoid pulse, and verify custom receipt headers.
-          </p>
-        </div>
-
-        <div class="feature-card" style="padding: 10px 12px;">
-          <h3 style="font-size: 8.8pt; color: #0f172a; margin-bottom: 4px;">Step 3: Cashier Training</h3>
-          <p style="font-size: 7.6pt; color: #475569;">
-            A quick 30-minute interactive cashier and manager training session covering speed billing, shift opening floats, discounts, and day-end Z-Report balancing.
-          </p>
-        </div>
-      </div>
-
-      <!-- Bottom Contact & Signoff -->
-      <div style="margin-top: 14px; padding: 12px 16px; background: #0f172a; border-radius: 10px; color: #ffffff; display: flex; justify-content: space-between; align-items: center;">
+      <!-- Hero Value Statement -->
+      <div class="hero-box">
         <div>
-          <div style="font-size: 9.5pt; font-weight: 800; color: #fbbf24;">Ready to Upgrade Your Restaurant Operations?</div>
-          <div style="font-size: 7.5pt; color: #94a3b8; margin-top: 2px;">
-            Contact us today to schedule your live system demonstration or activate your license.
+          <div class="hero-title">High-Speed POS &amp; Live Restaurant Command <span>for Southern Spoon</span></div>
+          <div class="hero-desc">
+            Engineered for high-volume rush hours: Offline-first touch billing, station-routed KOT kitchen printing, automatic cash drawer kicks, real-time Google Sheets phone sync, and all-new dynamic inventory &amp; portion control.
           </div>
         </div>
-        <div style="text-align: right;">
-          <div style="font-size: 8.5pt; font-weight: 700; color: #ffffff;">Hotline: 070 7 555 855</div>
-          <div style="font-size: 7.5pt; color: #cbd5e1;">Labuduwa, Galle • Sri Lanka</div>
+        <div class="hero-pill">
+          ⚡ 100% Offline-First<br/>No Internet Dependency
         </div>
       </div>
-    </div>
 
-    <!-- Footer -->
-    <div class="page-footer">
-      <span>Southern Spoon POS System • Commercial Proposal &amp; Terms</span>
-      <span class="page-number">Page 3 of 3</span>
+      <!-- 4 Core Operational Pillars -->
+      <div>
+        <div class="section-head">
+          <div class="head-bar"></div>
+          <div class="head-title">Core Operating Capabilities</div>
+          <div class="head-tag">Engineered for Reliability &amp; Speed</div>
+        </div>
+
+        <div class="grid-4">
+          <div class="card">
+            <div class="card-top">
+              <span class="card-icon">⚡</span>
+              <span class="card-title">Lightning Touch Billing &amp; Table Orders</span>
+            </div>
+            <p class="card-text">
+              Dine-In, Takeaway, and Delivery workflows. Full interactive table sessions, quick tender cash calculators, split payments, and instant discount authorization.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-top">
+              <span class="card-icon">☁️</span>
+              <span class="card-title">Real-Time Google Sheets Cloud Sync</span>
+            </div>
+            <p class="card-text">
+              Every settled bill mirrors instantly to your private Google Sheet. View itemized portions, revenue sums, payment splits, and shifts live from your smartphone.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-top">
+              <span class="card-icon">🖨️</span>
+              <span class="card-title">Direct ESC/POS Thermal Printing &amp; Auto-Kick</span>
+            </div>
+            <p class="card-text">
+              Native support for 80mm &amp; 58mm thermal receipt printers. Automatically triggers the 24V RJ11 cash drawer solenoid and auto-routes KOT slips to kitchen stations.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-top">
+              <span class="card-icon">🛡️</span>
+              <span class="card-title">Shift Audits &amp; Anti-Theft Governance</span>
+            </div>
+            <p class="card-text">
+              Mandatory morning float entry, mid-shift X-Reports, blind cash drawer closing declarations, automated over/short Z-Reports, and master supervisor PIN protection.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- HIGHLIGHTED FEATURE SPOTLIGHT: ALL-NEW INVENTORY & PORTION CONTROL -->
+      <div class="spotlight-box">
+        <div class="spotlight-header">
+          <div class="spotlight-title">✨ All-New Feature Spotlight: Live Inventory &amp; Portion Size Management</div>
+          <span class="spotlight-tag">Newly Added &amp; Fully Integrated</span>
+        </div>
+        <p style="font-size: 7.2pt; color: #78350f; line-height: 1.35;">
+          Directly integrated into the POS admin header, the new <strong>Inventory Center</strong> empowers Southern Spoon managers to control prices, configure portion sizes, and expand the menu in real time without technical support.
+        </p>
+
+        <div class="spotlight-grid">
+          <div class="spotlight-item">
+            <h4>🏷️ Real-Time Price Modifier</h4>
+            <p>Update base menu prices with quick steppers (-50, +50, +100) and instant audit logs with user/timestamp tracking.</p>
+          </div>
+
+          <div class="spotlight-item">
+            <h4>🍲 Portion Sizing Engine</h4>
+            <p>Configure Half / Full, Small / Regular / Large, or custom portion variants with individual price adjustments and live totals.</p>
+          </div>
+
+          <div class="spotlight-item">
+            <h4>📂 Universal Category Addition</h4>
+            <p>Add new dishes across all categories (Rice, Kottu, Noodles, Devilled, Juices, Desserts, Cigarettes) with 86 stock-out toggles.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick 5-Step Operational Flow -->
+      <div>
+        <div class="section-head">
+          <div class="head-bar"></div>
+          <div class="head-title">Rush-Hour Operational Flow</div>
+          <div class="head-tag">Seamless Order-to-Cash in Seconds</div>
+        </div>
+
+        <div class="workflow-strip">
+          <div class="workflow-step">
+            <div class="step-circle">1</div>
+            <div class="step-name">Punch Order</div>
+            <div class="step-desc">Portion / Steppers / Notes</div>
+          </div>
+          <div class="workflow-arrow">→</div>
+          <div class="workflow-step">
+            <div class="step-circle">2</div>
+            <div class="step-name">Kitchen KOT</div>
+            <div class="step-desc">Auto-routes to Wok/Bar</div>
+          </div>
+          <div class="workflow-arrow">→</div>
+          <div class="workflow-step">
+            <div class="step-circle">3</div>
+            <div class="step-name">Quick Settlement</div>
+            <div class="step-desc">Cash notes / Card / QR</div>
+          </div>
+          <div class="workflow-arrow">→</div>
+          <div class="workflow-step">
+            <div class="step-circle">4</div>
+            <div class="step-name">Print &amp; Kick Drawer</div>
+            <div class="step-desc">Thermal slip + RJ11 pulse</div>
+          </div>
+          <div class="workflow-arrow">→</div>
+          <div class="workflow-step">
+            <div class="step-circle">5</div>
+            <div class="step-name">Owner Cloud Sync</div>
+            <div class="step-desc">Instant Google Sheet update</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="page-footer">
+        <span>Southern Spoon POS System • Commercial Proposal &amp; Technical Specifications</span>
+        <span class="page-number">Page 1 of 2</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- PAGE 2 OF 2: ATTRACTIVE COMMERCIAL PRICING, HARDWARE & ACTIVATION    -->
+  <!-- ===================================================================== -->
+  <div class="page">
+    <div class="page-accent-top"></div>
+    <div class="page-watermark">OFFER</div>
+
+    <div class="content-layer">
+      <!-- Top Brand Header -->
+      <div class="header-bar">
+        <div class="brand-group">
+          ${logoBase64 ? `<img src="${logoBase64}" alt="Southern Spoon Logo" class="brand-logo" />` : ''}
+          <div class="brand-text">
+            <h1>SOUTHERN <span>SPOON</span></h1>
+            <p>Investment Options &amp; Turnkey Onboarding Guarantee</p>
+          </div>
+        </div>
+        <div class="meta-badge-group">
+          <span class="meta-badge">Commercial Pricing Offer</span>
+          <div class="meta-sub">Direct Developer Guarantee • Zero Royalties</div>
+        </div>
+      </div>
+
+      <!-- Pricing Plans Side-by-Side -->
+      <div>
+        <div class="section-head">
+          <div class="head-bar"></div>
+          <div class="head-title">Commercial Licensing &amp; Investment Plans</div>
+          <div class="head-tag">Transparent Pricing • No Hidden Fees</div>
+        </div>
+
+        <div class="pricing-container">
+          <!-- Monthly Plan -->
+          <div class="price-box standard">
+            <div>
+              <div class="plan-title">Monthly Flexibility</div>
+              <div class="plan-sub">Pay month-to-month with total freedom</div>
+
+              <div class="price-num-row">
+                <span class="price-lkr">LKR</span>
+                <span class="price-val">5,000</span>
+                <span class="price-term">/ month</span>
+              </div>
+              <p style="font-size: 6.8pt; color: #64748b; margin-bottom: 8px;">Cancel or upgrade anytime with zero penalties.</p>
+
+              <ul class="feat-list">
+                <li><span class="check-green">✓</span> Complete Offline POS System &amp; Desktop App</li>
+                <li><span class="check-green">✓</span> 80mm &amp; 58mm ESC/POS Thermal Printing</li>
+                <li><span class="check-green">✓</span> RJ11 Cash Drawer Auto-Kick Integration</li>
+                <li><span class="check-green">✓</span> Kitchen KOT Station Routing (Wok/Bar/Griddle)</li>
+                <li><span class="check-green">✓</span> Live Google Sheets Cloud Mirroring</li>
+                <li><span class="check-green">✓</span> Shift Management, X-Reports &amp; Z-Reports</li>
+                <li><span class="check-green">✓</span> All-New Live Inventory &amp; Portion Controller</li>
+                <li><span class="check-green">✓</span> Standard Technical Support (9 AM – 6 PM)</li>
+              </ul>
+            </div>
+            <div>
+              <div class="btn-plan outline">Select Monthly • LKR 5,000/mo</div>
+            </div>
+          </div>
+
+          <!-- Annual Enterprise Plan (RECOMMENDED) -->
+          <div class="price-box annual">
+            <div class="badge-pop">MOST POPULAR • SAVE 33%</div>
+            <div>
+              <div class="plan-title">Annual Enterprise Plan</div>
+              <div class="plan-sub">Maximum value, complete VIP support &amp; free upgrades</div>
+
+              <div class="price-num-row">
+                <span class="price-lkr">LKR</span>
+                <span class="price-val" style="color: #d97706;">40,000</span>
+                <span class="price-term">/ year</span>
+              </div>
+
+              <div class="savings-badge">
+                🎉 Instant Savings of LKR 20,000 / Year (Only ~3,333 LKR / month!)
+              </div>
+
+              <ul class="feat-list">
+                <li><span class="check-green">✓</span> <strong>Everything included in the Monthly Plan</strong></li>
+                <li><span class="check-green">✓</span> <strong>1 Full Year of Unlimited Licensing &amp; Usage</strong></li>
+                <li><span class="check-green">✓</span> <strong>FREE Initial Menu Setup, Portion Pricing &amp; Category Pre-Load</strong></li>
+                <li><span class="check-green">✓</span> <strong>Priority 24/7 Phone &amp; Remote WhatsApp Support</strong></li>
+                <li><span class="check-green">✓</span> <strong>On-Site or Remote Staff Cashier &amp; Supervisor Training</strong></li>
+                <li><span class="check-green">✓</span> <strong>FREE Software Feature Updates, Patches &amp; Cloud Sync Tuning</strong></li>
+                <li><span class="check-green">✓</span> <strong>Guaranteed 2-Year Renewal Price Lock Protection</strong></li>
+              </ul>
+            </div>
+            <div>
+              <div class="btn-plan solid">Choose Annual Plan (Recommended)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Turnkey Hardware Compatibility Matrix -->
+      <div>
+        <div class="section-head">
+          <div class="head-bar"></div>
+          <div class="head-title">Hardware Compatibility Specifications</div>
+          <div class="head-tag">Plug &amp; Play with Standard Hardware</div>
+        </div>
+
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th style="width: 25%;">Hardware Component</th>
+              <th style="width: 55%;">Supported Standard &amp; Models</th>
+              <th style="width: 20%;">Compatibility Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="b">POS Terminal / PC</td>
+              <td>Any Windows 10/11 Desktop, Touch AIO, Mini PC, or Laptop. Native Electron app.</td>
+              <td><span class="tag-badge tag-green">Fully Compatible</span></td>
+            </tr>
+            <tr>
+              <td class="b">Thermal Printers</td>
+              <td>Standard 80mm &amp; 58mm USB / Serial ESC/POS. Epson, Xprinter, Rongta, Bixolon, Sunmi.</td>
+              <td><span class="tag-badge tag-green">Native Support</span></td>
+            </tr>
+            <tr>
+              <td class="b">Cash Drawers</td>
+              <td>Standard 12V / 24V RJ11 interface connected to thermal receipt printer.</td>
+              <td><span class="tag-badge tag-green">Auto-Kick</span></td>
+            </tr>
+            <tr>
+              <td class="b">Internet &amp; Network</td>
+              <td>Operates 100% offline. Internet (Wi-Fi/Dongle) only needed for Google Sheets cloud sync.</td>
+              <td><span class="tag-badge tag-blue">Offline-First</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Fast 3-Step Handover -->
+      <div>
+        <div class="section-head">
+          <div class="head-bar"></div>
+          <div class="head-title">Fast 3-Step Zero-Downtime Deployment</div>
+          <div class="head-tag">Turnkey Handover Within 24 Hours</div>
+        </div>
+
+        <div class="steps-row">
+          <div class="step-card">
+            <h4>Step 1: Setup &amp; Menu Load</h4>
+            <p>We install the desktop POS, configure categories, food items, base prices, portion sizing, and link Google Sheets.</p>
+          </div>
+
+          <div class="step-card">
+            <h4>Step 2: Hardware Pairing</h4>
+            <p>We calibrate thermal receipt printers, test kitchen KOT dispatch, test RJ11 drawer kick, and customize receipt footers.</p>
+          </div>
+
+          <div class="step-card">
+            <h4>Step 3: Staff Training</h4>
+            <p>A quick 30-minute interactive cashier training on speed billing, shift floats, discount PINs, and day-end Z-Reports.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Contact Call to Action Bar -->
+      <div class="contact-banner">
+        <div class="contact-left">
+          <h3>Ready to Modernize Southern Spoon Labuduwa?</h3>
+          <p>Contact us today to schedule your live system demonstration or activate your annual license.</p>
+        </div>
+        <div class="contact-right">
+          <div class="hotline-num">Hotline: 070 7 555 855</div>
+          <div class="location-text">Labuduwa, Galle • Sri Lanka</div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="page-footer">
+        <span>Southern Spoon POS System • Commercial Pricing &amp; Terms of Service</span>
+        <span class="page-number">Page 2 of 2</span>
+      </div>
     </div>
   </div>
 
@@ -1046,16 +1007,16 @@ const htmlContent = `<!DOCTYPE html>
 </html>
 `;
 
-// 2. Write HTML file
+// Write HTML
 const htmlPath = path.join(__dirname, '..', 'Southern_Spoon_POS_System_Proposal.html');
 fs.writeFileSync(htmlPath, htmlContent, 'utf8');
-console.log('HTML proposal written to:', htmlPath);
+console.log('2-Page HTML Proposal written to:', htmlPath);
 
-// 3. Render PDF using Microsoft Edge headless
+// Render PDF with Edge Headless
 const pdfPath = path.join(__dirname, '..', 'Southern_Spoon_POS_System_Proposal.pdf');
 const edgeExe = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 
-console.log('Generating high-resolution PDF with Edge Headless...');
+console.log('Rendering 2-Page PDF with Microsoft Edge headless...');
 try {
   execFileSync(edgeExe, [
     '--headless',
@@ -1067,7 +1028,7 @@ try {
 
   if (fs.existsSync(pdfPath)) {
     const stats = fs.statSync(pdfPath);
-    console.log(`Success! PDF Generated: ${pdfPath}`);
+    console.log(`Success! 2-Page PDF Generated: ${pdfPath}`);
     console.log(`File size: ${(stats.size / 1024).toFixed(1)} KB`);
   } else {
     console.error('PDF file was not created.');
