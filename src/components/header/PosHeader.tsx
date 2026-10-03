@@ -16,7 +16,8 @@ import {
   Tag,
   ShieldCheck,
   BarChart3,
-  Banknote
+  Banknote,
+  Package
 } from 'lucide-react';
 import { OrderType } from '../../types';
 import { GitUpdateModal } from '../modals/GitUpdateModal';
@@ -182,14 +183,14 @@ export const PosHeader: React.FC = () => {
           <span className="hidden md:inline">Open Drawer</span>
         </button>
 
-        {/* Menu & Item Prices (Admin) */}
+        {/* Inventory & Menu Management (Admin) */}
         <button
           onClick={openMenuPriceModal}
-          title="Menu & Item Price Management"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-amber-300 border border-slate-700 hover:bg-slate-700 hover:border-amber-500/40 transition-all"
+          title="Inventory & Menu Management (Items, Prices, Portions)"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-amber-300 border border-slate-700 hover:bg-slate-700 hover:border-amber-500/40 transition-all cursor-pointer"
         >
-          <Tag className="w-3.5 h-3.5 text-amber-400" />
-          <span className="hidden md:inline">Prices</span>
+          <Package className="w-3.5 h-3.5 text-amber-400" />
+          <span className="hidden md:inline">Inventory</span>
         </button>
 
         {/* Order History */}

@@ -213,6 +213,116 @@ class SQLiteLocalDatabase {
     return false;
   }
 
+  public addCategory(name: string, icon: string = 'LayoutGrid', color: string = 'bg-amber-600'): Category {
+    const existing = this.categories.find(c => c.name.toLowerCase() === name.trim().toLowerCase());
+    if (existing) return existing;
+    const newId = (this.categories.length > 0 ? Math.max(...this.categories.map(c => c.id)) : 0) + 1;
+    const newCat: Category = {
+      id: newId,
+      name: name.trim(),
+      display_order: newId,
+      icon,
+      color,
+    };
+    this.categories.push(newCat);
+    this.persistAll();
+    return newCat;
+  }
+
+  public addMenuItem(itemData: Omit<MenuItem, 'id'> & { id?: number }, changedBy: string = 'Admin'): MenuItem {
+    const newId = itemData.id || ((this.menuItems.length > 0 ? Math.max(...this.menuItems.map(m => m.id)) : 100) + 1);
+    
+    // Ensure variants have unique ids and menu_item_id
+    const variants: ItemVariant[] | undefined = itemData.variants?.map((v, idx) => ({
+      id: v.id && v.id > 0 ? v.id : (Date.now() + idx),
+      menu_item_id: newId,
+      variant_name: v.variant_name.trim(),
+      price_adjustment: Number(v.price_adjustment) || 0,
+    }));
+
+    const newItem: MenuItem = {
+      ...itemData,
+      id: newId,
+      base_price: Number(itemData.base_price) || 0,
+      is_available: itemData.is_available ?? true,
+      variants: variants && variants.length > 0 ? variants : undefined,
+    };
+
+    this.menuItems.push(newItem);
+
+    this.priceAudits.unshift({
+      id: Date.now(),
+      item_id: newItem.id,
+      item_name: `[NEW ITEM] ${newItem.name}`,
+      old_price: 0,
+      new_price: newItem.base_price,
+      timestamp: new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString(),
+      changed_by: changedBy,
+    });
+
+    this.persistAll();
+    return newItem;
+  }
+
+  public updateMenuItem(item: MenuItem, changedBy: string = 'Admin'): boolean {
+    const index = this.menuItems.findIndex(m => m.id === item.id);
+    if (index === -1) return false;
+
+    const old = this.menuItems[index];
+    const priceChanged = old.base_price !== item.base_price;
+
+    const variants: ItemVariant[] | undefined = item.variants?.map((v, idx) => ({
+      id: v.id && v.id > 0 ? v.id : (Date.now() + idx),
+      menu_item_id: item.id,
+      variant_name: v.variant_name.trim(),
+      price_adjustment: Number(v.price_adjustment) || 0,
+    }));
+
+    const updatedItem: MenuItem = {
+      ...item,
+      base_price: Number(item.base_price) || 0,
+      variants: variants && variants.length > 0 ? variants : undefined,
+    };
+
+    this.menuItems[index] = updatedItem;
+
+    if (priceChanged) {
+      this.priceAudits.unshift({
+        id: Date.now(),
+        item_id: updatedItem.id,
+        item_name: updatedItem.name,
+        old_price: old.base_price,
+        new_price: updatedItem.base_price,
+        timestamp: new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString(),
+        changed_by: changedBy,
+      });
+    }
+
+    this.persistAll();
+    return true;
+  }
+
+  public deleteMenuItem(itemId: number, changedBy: string = 'Admin'): boolean {
+    const index = this.menuItems.findIndex(m => m.id === itemId);
+    if (index === -1) return false;
+
+    const deleted = this.menuItems[index];
+    this.menuItems.splice(index, 1);
+
+    this.priceAudits.unshift({
+      id: Date.now(),
+      item_id: deleted.id,
+      item_name: `[DELETED] ${deleted.name}`,
+      old_price: deleted.base_price,
+      new_price: 0,
+      timestamp: new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString(),
+      changed_by: changedBy,
+    });
+
+    this.persistAll();
+    return true;
+  }
+
   public getPriceAudits(): PriceChangeAudit[] {
     return [...this.priceAudits];
   }

@@ -116,6 +116,10 @@ interface PosState {
   openMenuPriceModal: () => void;
   closeMenuPriceModal: () => void;
   updateMenuItemPrice: (itemId: number, newBasePrice: number, variantUpdates?: { id: number; price_adjustment: number }[]) => boolean;
+  addMenuItem: (itemData: Omit<MenuItem, 'id'> & { id?: number }) => MenuItem;
+  updateMenuItem: (item: MenuItem) => boolean;
+  deleteMenuItem: (itemId: number) => boolean;
+  addCategory: (name: string, icon?: string, color?: string) => Category;
   printPayoutVoucher: (txn: CashTransaction) => void;
 
   setOrderType: (type: OrderType) => void;
@@ -1110,9 +1114,9 @@ export const usePosStore = create<PosState>((set, get) => ({
     });
   },
 
-  // --- MENU PRICE MANAGEMENT ---
+  // --- INVENTORY & MENU MANAGEMENT ---
   openMenuPriceModal: () => {
-    get().requireAdminAuth('Authorize Menu Price Management', () => {
+    get().requireAdminAuth('Authorize Inventory & Menu Management', () => {
       set({ isMenuPriceModalOpen: true });
     });
   },
@@ -1135,5 +1139,47 @@ export const usePosStore = create<PosState>((set, get) => ({
     }
 
     return success;
+  },
+
+  addMenuItem: (itemData: Omit<MenuItem, 'id'> & { id?: number }) => {
+    const changer = get().currentUserRole === 'admin' ? 'Admin Manager' : get().activeShift.cashier_name;
+    const newItem = posDatabase.addMenuItem(itemData, changer);
+    set({
+      menuItems: posDatabase.getMenuItems(),
+      priceAudits: posDatabase.getPriceAudits(),
+    });
+    return newItem;
+  },
+
+  updateMenuItem: (item: MenuItem) => {
+    const changer = get().currentUserRole === 'admin' ? 'Admin Manager' : get().activeShift.cashier_name;
+    const success = posDatabase.updateMenuItem(item, changer);
+    if (success) {
+      set({
+        menuItems: posDatabase.getMenuItems(),
+        priceAudits: posDatabase.getPriceAudits(),
+      });
+    }
+    return success;
+  },
+
+  deleteMenuItem: (itemId: number) => {
+    const changer = get().currentUserRole === 'admin' ? 'Admin Manager' : get().activeShift.cashier_name;
+    const success = posDatabase.deleteMenuItem(itemId, changer);
+    if (success) {
+      set({
+        menuItems: posDatabase.getMenuItems(),
+        priceAudits: posDatabase.getPriceAudits(),
+      });
+    }
+    return success;
+  },
+
+  addCategory: (name: string, icon?: string, color?: string) => {
+    const newCat = posDatabase.addCategory(name, icon, color);
+    set({
+      categories: posDatabase.getCategories(),
+    });
+    return newCat;
   },
 }));
