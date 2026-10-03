@@ -671,12 +671,12 @@ const htmlContent = `<!DOCTYPE html>
           ${logoBase64 ? `<img src="${logoBase64}" alt="Southern Spoon Logo" class="brand-logo" />` : ''}
           <div class="brand-text">
             <h1>SOUTHERN <span>SPOON</span></h1>
-            <p>Labuduwa, Galle • Complete Offline Restaurant POS</p>
+            <p>Labuduwa, Galle • Prepared For: Restaurant Management</p>
           </div>
         </div>
         <div class="meta-badge-group">
           <span class="meta-badge">Commercial Proposal &amp; Sales Offer</span>
-          <div class="meta-sub">Ref: SS-POS-2026-V2 • Single Hotline Edition</div>
+          <div class="meta-sub">Developer Direct: 077 336 1565</div>
         </div>
       </div>
 
@@ -840,7 +840,7 @@ const htmlContent = `<!DOCTYPE html>
         </div>
         <div class="meta-badge-group">
           <span class="meta-badge">Commercial Pricing Offer</span>
-          <div class="meta-sub">Direct Developer Guarantee • Zero Royalties</div>
+          <div class="meta-sub">Developer Direct Line: 077 336 1565</div>
         </div>
       </div>
 
@@ -987,17 +987,17 @@ const htmlContent = `<!DOCTYPE html>
       <div class="contact-banner">
         <div class="contact-left">
           <h3>Ready to Modernize Southern Spoon Labuduwa?</h3>
-          <p>Contact us today to schedule your live system demonstration or activate your annual license.</p>
+          <p>Contact software developer directly to schedule live demonstration or activate your license.</p>
         </div>
         <div class="contact-right">
-          <div class="hotline-num">Hotline: 070 7 555 855</div>
-          <div class="location-text">Labuduwa, Galle • Sri Lanka</div>
+          <div class="hotline-num">Direct: 077 336 1565</div>
+          <div class="location-text">Software Developer &amp; Technical Lead</div>
         </div>
       </div>
 
       <!-- Footer -->
       <div class="page-footer">
-        <span>Southern Spoon POS System • Commercial Pricing &amp; Terms of Service</span>
+        <span>Southern Spoon POS System • Developer Direct: 077 336 1565</span>
         <span class="page-number">Page 2 of 2</span>
       </div>
     </div>
