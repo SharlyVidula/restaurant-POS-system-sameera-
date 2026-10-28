@@ -1,4 +1,4 @@
-import { Category, MenuItem, DiningTable, RestaurantProfile, ShiftSession } from '../types';
+import { Category, MenuItem, DiningTable, RestaurantProfile, ShiftSession, OrderQueueSlot } from '../types';
 
 export const RESTAURANT_PROFILE: RestaurantProfile = {
   name: "SOUTHERN SPOON",
@@ -738,3 +738,26 @@ export const INITIAL_SHIFT: ShiftSession = {
   void_count: 1,
   cash_drawer_expected: 37400.0, // 15000 float + 22400 cash sales
 };
+
+export const INITIAL_TAKEAWAY_QUEUES: OrderQueueSlot[] = [
+  { id: "TK-01", queue_number: "TK-01", type: "takeaway", status: "vacant" },
+  { id: "TK-02", queue_number: "TK-02", type: "takeaway", status: "vacant" },
+  { id: "TK-03", queue_number: "TK-03", type: "takeaway", status: "vacant" },
+  { id: "TK-04", queue_number: "TK-04", type: "takeaway", status: "vacant" },
+  { id: "TK-05", queue_number: "TK-05", type: "takeaway", status: "vacant" },
+  { id: "TK-06", queue_number: "TK-06", type: "takeaway", status: "vacant" },
+  { id: "TK-07", queue_number: "TK-07", type: "takeaway", status: "vacant" },
+  { id: "TK-08", queue_number: "TK-08", type: "takeaway", status: "vacant" },
+];
+
+export const INITIAL_DELIVERY_QUEUES: OrderQueueSlot[] = [
+  { id: "DL-01", queue_number: "DL-01", type: "delivery", platform: "uber_eats", platform_label: "Uber Eats", status: "vacant" },
+  { id: "DL-02", queue_number: "DL-02", type: "delivery", platform: "pickme", platform_label: "PickMe Food", status: "vacant" },
+  { id: "DL-03", queue_number: "DL-03", type: "delivery", platform: "direct", platform_label: "Direct Phone", status: "vacant" },
+  { id: "DL-04", queue_number: "DL-04", type: "delivery", platform: "in_house", platform_label: "In-House Rider", status: "vacant" },
+  { id: "DL-05", queue_number: "DL-05", type: "delivery", platform: "uber_eats", platform_label: "Uber Eats", status: "vacant" },
+  { id: "DL-06", queue_number: "DL-06", type: "delivery", platform: "pickme", platform_label: "PickMe Food", status: "vacant" },
+  { id: "DL-07", queue_number: "DL-07", type: "delivery", platform: "direct", platform_label: "Direct Phone", status: "vacant" },
+  { id: "DL-08", queue_number: "DL-08", type: "delivery", platform: "in_house", platform_label: "In-House Rider", status: "vacant" },
+];
+

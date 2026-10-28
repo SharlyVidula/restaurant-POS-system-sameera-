@@ -17,7 +17,10 @@ import {
   UserRole,
   CashTransaction,
   PriceChangeAudit,
-  TableSession
+  TableSession,
+  OrderQueueSlot,
+  QueueType,
+  DeliveryPlatform
 } from '../types';
 import { posDatabase } from '../db/sqlite';
 import { RESTAURANT_PROFILE } from '../data/seedData';
@@ -67,6 +70,10 @@ interface PosState {
   // Active Order State
   orderType: OrderType;
   selectedTable: DiningTable | null;
+  selectedTakeawayQueue: string;
+  selectedDeliveryQueue: string;
+  takeawayQueues: OrderQueueSlot[];
+  deliveryQueues: OrderQueueSlot[];
   cart: CartItem[];
   discountPercentage: number;
   discountAmount: number;
@@ -85,6 +92,8 @@ interface PosState {
   variantModalItem: MenuItem | null;
   isPaymentModalOpen: boolean;
   isTableModalOpen: boolean;
+  isQueueModalOpen: boolean;
+  queueModalType: 'takeaway' | 'delivery';
   isHistoryModalOpen: boolean;
   isSalesReportModalOpen: boolean;
   isXReportModalOpen: boolean;
@@ -126,6 +135,14 @@ interface PosState {
   setSelectedCategory: (categoryId: number | null) => void;
   setSearchQuery: (query: string) => void;
   selectTable: (table: DiningTable | null) => void;
+  selectTakeawayQueue: (queueId: string) => void;
+  selectDeliveryQueue: (queueId: string) => void;
+  openQueueModal: (type?: 'takeaway' | 'delivery') => void;
+  closeQueueModal: () => void;
+  addTakeawayQueue: (customLabel?: string) => string;
+  addDeliveryQueue: (platform: DeliveryPlatform, customLabel?: string, customerName?: string, phone?: string, riderName?: string, address?: string) => string;
+  clearQueueSession: (type: 'takeaway' | 'delivery', queueId: string) => void;
+  getActiveQueueCount: (type: 'takeaway' | 'delivery') => number;
   
   // Cart Actions
   openVariantModal: (item: MenuItem) => void;
@@ -198,9 +215,18 @@ interface PosState {
   loadOrderIntoCart: (order: Order) => void;
 }
 
-function getSessionKey(orderType: OrderType, tableId?: number | null): string {
+function getSessionKey(
+  orderType: OrderType, 
+  tableId?: number | null,
+  takeawayQueueId?: string | null,
+  deliveryQueueId?: string | null
+): string {
   if (orderType === 'dine_in') {
     return tableId ? `table-${tableId}` : 'dine_in_general';
+  } else if (orderType === 'takeaway') {
+    return `takeaway-${takeawayQueueId || 'TK-01'}`;
+  } else if (orderType === 'delivery') {
+    return `delivery-${deliveryQueueId || 'DL-01'}`;
   }
   return orderType;
 }
@@ -228,6 +254,8 @@ function calculateNetTotalFromCart(
 function syncSession(state: {
   orderType: OrderType;
   selectedTable: DiningTable | null;
+  selectedTakeawayQueue: string;
+  selectedDeliveryQueue: string;
   cart: CartItem[];
   discountPercentage: number;
   discountAmount: number;
@@ -238,13 +266,20 @@ function syncSession(state: {
   orderNotes: string;
   tableSessions: Record<string, TableSession>;
 }): Record<string, TableSession> {
-  const key = getSessionKey(state.orderType, state.selectedTable?.id);
+  const key = getSessionKey(
+    state.orderType, 
+    state.selectedTable?.id,
+    state.selectedTakeawayQueue,
+    state.selectedDeliveryQueue
+  );
   const updatedSessions = { ...state.tableSessions };
 
   if (state.cart && state.cart.length > 0) {
     const session: TableSession = {
-      table_id: state.selectedTable ? state.selectedTable.id : null,
+      table_id: state.orderType === 'dine_in' && state.selectedTable ? state.selectedTable.id : null,
       table_number: state.selectedTable?.table_number,
+      queue_id: state.orderType === 'takeaway' ? state.selectedTakeawayQueue : state.orderType === 'delivery' ? state.selectedDeliveryQueue : undefined,
+      queue_number: state.orderType === 'takeaway' ? state.selectedTakeawayQueue : state.orderType === 'delivery' ? state.selectedDeliveryQueue : undefined,
       order_type: state.orderType,
       cart: state.cart,
       discountPercentage: state.discountPercentage,
@@ -258,21 +293,49 @@ function syncSession(state: {
     };
     updatedSessions[key] = session;
 
+    const net = calculateNetTotalFromCart(
+      state.cart,
+      state.discountPercentage,
+      state.discountAmount,
+      state.includeServiceCharge,
+      state.includeTax
+    );
+    const totalItems = state.cart.reduce((sum, item) => sum + item.quantity, 0);
+
     if (state.orderType === 'dine_in' && state.selectedTable) {
-      const net = calculateNetTotalFromCart(
-        state.cart,
-        state.discountPercentage,
-        state.discountAmount,
-        state.includeServiceCharge,
-        state.includeTax
-      );
       posDatabase.updateTableStatus(state.selectedTable.id, 'occupied', undefined, net);
+    } else if (state.orderType === 'takeaway') {
+      posDatabase.updateTakeawayQueueStatus(
+        state.selectedTakeawayQueue,
+        'occupied',
+        net,
+        totalItems,
+        state.customerName,
+        state.customerPhone,
+        state.orderNotes
+      );
+    } else if (state.orderType === 'delivery') {
+      posDatabase.updateDeliveryQueueStatus(
+        state.selectedDeliveryQueue,
+        'occupied',
+        net,
+        totalItems,
+        state.customerName,
+        state.customerPhone,
+        undefined,
+        undefined,
+        state.orderNotes
+      );
     }
   } else {
-    // If cart is empty, remove session for this table
+    // If cart is empty, remove session for this queue/table
     delete updatedSessions[key];
     if (state.orderType === 'dine_in' && state.selectedTable) {
       posDatabase.updateTableStatus(state.selectedTable.id, 'vacant');
+    } else if (state.orderType === 'takeaway') {
+      posDatabase.updateTakeawayQueueStatus(state.selectedTakeawayQueue, 'vacant');
+    } else if (state.orderType === 'delivery') {
+      posDatabase.updateDeliveryQueueStatus(state.selectedDeliveryQueue, 'vacant');
     }
   }
 
@@ -285,11 +348,15 @@ export const usePosStore = create<PosState>((set, get) => ({
   categories: [],
   menuItems: [],
   tables: [],
+  takeawayQueues: [],
+  deliveryQueues: [],
   activeShift: posDatabase.getActiveShift(),
   recentOrders: [],
 
   orderType: 'dine_in',
   selectedTable: null,
+  selectedTakeawayQueue: 'TK-01',
+  selectedDeliveryQueue: 'DL-01',
   cart: [],
   discountPercentage: 0,
   discountAmount: 0,
@@ -305,6 +372,8 @@ export const usePosStore = create<PosState>((set, get) => ({
   variantModalItem: null,
   isPaymentModalOpen: false,
   isTableModalOpen: false,
+  isQueueModalOpen: false,
+  queueModalType: 'takeaway',
   isHistoryModalOpen: false,
   isSalesReportModalOpen: false,
   isXReportModalOpen: false,
@@ -329,25 +398,56 @@ export const usePosStore = create<PosState>((set, get) => ({
     const needsFloat = posDatabase.isOpeningFloatRequired();
     const savedSessions = posDatabase.getTableSessions();
 
-    // Synchronize stored table sessions with table occupied status and amount in DB
+    // Synchronize stored table & queue sessions with DB
     Object.values(savedSessions).forEach((session) => {
-      if (session.order_type === 'dine_in' && session.table_id && session.cart && session.cart.length > 0) {
+      if (session.cart && session.cart.length > 0) {
         const net = calculateNetTotalFromCart(
           session.cart,
           session.discountPercentage || 0,
           session.discountAmount || 0,
-          session.includeServiceCharge ?? true,
+          session.includeServiceCharge ?? (session.order_type === 'dine_in'),
           session.includeTax ?? false
         );
-        posDatabase.updateTableStatus(session.table_id, 'occupied', undefined, net);
+        const totalItems = session.cart.reduce((sum, item) => sum + item.quantity, 0);
+
+        if (session.order_type === 'dine_in' && session.table_id) {
+          posDatabase.updateTableStatus(session.table_id, 'occupied', undefined, net);
+        } else if (session.order_type === 'takeaway' && session.queue_id) {
+          posDatabase.updateTakeawayQueueStatus(
+            session.queue_id,
+            'occupied',
+            net,
+            totalItems,
+            session.customerName,
+            session.customerPhone,
+            session.orderNotes
+          );
+        } else if (session.order_type === 'delivery' && session.queue_id) {
+          posDatabase.updateDeliveryQueueStatus(
+            session.queue_id,
+            'occupied',
+            net,
+            totalItems,
+            session.customerName,
+            session.customerPhone,
+            session.rider_name,
+            session.delivery_address,
+            session.orderNotes
+          );
+        }
       }
     });
 
     const tables = posDatabase.getTables();
+    const takeawayQueues = posDatabase.getTakeawayQueues();
+    const deliveryQueues = posDatabase.getDeliveryQueues();
+
     set({
       categories: posDatabase.getCategories(),
       menuItems: posDatabase.getMenuItems(),
       tables,
+      takeawayQueues,
+      deliveryQueues,
       activeShift: posDatabase.getActiveShift(),
       recentOrders: posDatabase.getOrders(),
       cashTransactions: posDatabase.getCashTransactions(),
@@ -355,6 +455,112 @@ export const usePosStore = create<PosState>((set, get) => ({
       isOpeningFloatModalOpen: needsFloat,
       tableSessions: savedSessions,
     });
+  },
+
+  openQueueModal: (type) => {
+    const currentType = type || (get().orderType === 'delivery' ? 'delivery' : 'takeaway');
+    set({ isQueueModalOpen: true, queueModalType: currentType });
+  },
+
+  closeQueueModal: () => set({ isQueueModalOpen: false }),
+
+  selectTakeawayQueue: (queueId) => {
+    const state = get();
+    const updatedSessions = syncSession(state);
+    const targetKey = `takeaway-${queueId}`;
+    const targetSession = updatedSessions[targetKey];
+
+    set({
+      selectedTakeawayQueue: queueId,
+      orderType: 'takeaway',
+      selectedTable: null,
+      includeServiceCharge: false,
+      cart: targetSession?.cart || [],
+      discountPercentage: targetSession?.discountPercentage || 0,
+      discountAmount: targetSession?.discountAmount || 0,
+      includeTax: targetSession?.includeTax ?? false,
+      customerName: targetSession?.customerName || '',
+      customerPhone: targetSession?.customerPhone || '',
+      orderNotes: targetSession?.orderNotes || '',
+      tableSessions: updatedSessions,
+      takeawayQueues: posDatabase.getTakeawayQueues(),
+      deliveryQueues: posDatabase.getDeliveryQueues(),
+      isQueueModalOpen: false,
+    });
+  },
+
+  selectDeliveryQueue: (queueId) => {
+    const state = get();
+    const updatedSessions = syncSession(state);
+    const targetKey = `delivery-${queueId}`;
+    const targetSession = updatedSessions[targetKey];
+
+    set({
+      selectedDeliveryQueue: queueId,
+      orderType: 'delivery',
+      selectedTable: null,
+      includeServiceCharge: false,
+      cart: targetSession?.cart || [],
+      discountPercentage: targetSession?.discountPercentage || 0,
+      discountAmount: targetSession?.discountAmount || 0,
+      includeTax: targetSession?.includeTax ?? false,
+      customerName: targetSession?.customerName || '',
+      customerPhone: targetSession?.customerPhone || '',
+      orderNotes: targetSession?.orderNotes || '',
+      tableSessions: updatedSessions,
+      takeawayQueues: posDatabase.getTakeawayQueues(),
+      deliveryQueues: posDatabase.getDeliveryQueues(),
+      isQueueModalOpen: false,
+    });
+  },
+
+  addTakeawayQueue: (customLabel) => {
+    const newQueue = posDatabase.addTakeawayQueue(customLabel);
+    set({ takeawayQueues: posDatabase.getTakeawayQueues() });
+    return newQueue.id;
+  },
+
+  addDeliveryQueue: (platform, customLabel, customerName, phone, riderName, address) => {
+    const newQueue = posDatabase.addDeliveryQueue(platform, customLabel, customerName, phone, riderName, address);
+    set({ deliveryQueues: posDatabase.getDeliveryQueues() });
+    return newQueue.id;
+  },
+
+  clearQueueSession: (type, queueId) => {
+    const state = get();
+    const key = `${type}-${queueId}`;
+    const updatedSessions = { ...state.tableSessions };
+    delete updatedSessions[key];
+    posDatabase.saveTableSessions(updatedSessions);
+
+    if (type === 'takeaway') {
+      posDatabase.updateTakeawayQueueStatus(queueId, 'vacant');
+    } else {
+      posDatabase.updateDeliveryQueueStatus(queueId, 'vacant');
+    }
+
+    const isCurrentActive = (type === 'takeaway' && state.selectedTakeawayQueue === queueId && state.orderType === 'takeaway') ||
+      (type === 'delivery' && state.selectedDeliveryQueue === queueId && state.orderType === 'delivery');
+
+    set({
+      ...(isCurrentActive ? {
+        cart: [],
+        discountPercentage: 0,
+        discountAmount: 0,
+        customerName: '',
+        customerPhone: '',
+        orderNotes: '',
+      } : {}),
+      tableSessions: updatedSessions,
+      takeawayQueues: posDatabase.getTakeawayQueues(),
+      deliveryQueues: posDatabase.getDeliveryQueues(),
+    });
+  },
+
+  getActiveQueueCount: (type) => {
+    const { tableSessions } = get();
+    const prefix = `${type}-`;
+    return Object.keys(tableSessions).filter(k => k.startsWith(prefix) && (tableSessions[k].cart?.length || 0) > 0).length;
   },
 
   setOrderType: (type: OrderType) => {
@@ -381,9 +587,11 @@ export const usePosStore = create<PosState>((set, get) => ({
         orderNotes: targetSession?.orderNotes || '',
         tableSessions: updatedSessions,
         tables: posDatabase.getTables(),
+        takeawayQueues: posDatabase.getTakeawayQueues(),
+        deliveryQueues: posDatabase.getDeliveryQueues(),
       });
-    } else {
-      const targetKey = type;
+    } else if (type === 'takeaway') {
+      const targetKey = `takeaway-${state.selectedTakeawayQueue}`;
       const targetSession = updatedSessions[targetKey];
 
       set({
@@ -399,6 +607,28 @@ export const usePosStore = create<PosState>((set, get) => ({
         orderNotes: targetSession?.orderNotes || '',
         tableSessions: updatedSessions,
         tables: posDatabase.getTables(),
+        takeawayQueues: posDatabase.getTakeawayQueues(),
+        deliveryQueues: posDatabase.getDeliveryQueues(),
+      });
+    } else {
+      const targetKey = `delivery-${state.selectedDeliveryQueue}`;
+      const targetSession = updatedSessions[targetKey];
+
+      set({
+        orderType: type,
+        selectedTable: null,
+        includeServiceCharge: false,
+        cart: targetSession?.cart || [],
+        discountPercentage: targetSession?.discountPercentage || 0,
+        discountAmount: targetSession?.discountAmount || 0,
+        includeTax: targetSession?.includeTax ?? false,
+        customerName: targetSession?.customerName || '',
+        customerPhone: targetSession?.customerPhone || '',
+        orderNotes: targetSession?.orderNotes || '',
+        tableSessions: updatedSessions,
+        tables: posDatabase.getTables(),
+        takeawayQueues: posDatabase.getTakeawayQueues(),
+        deliveryQueues: posDatabase.getDeliveryQueues(),
       });
     }
   },
@@ -430,6 +660,8 @@ export const usePosStore = create<PosState>((set, get) => ({
         orderNotes: targetSession?.orderNotes || '',
         tableSessions: updatedSessions,
         tables: posDatabase.getTables(),
+        takeawayQueues: posDatabase.getTakeawayQueues(),
+        deliveryQueues: posDatabase.getDeliveryQueues(),
         isTableModalOpen: false,
       });
     } else {
@@ -449,6 +681,8 @@ export const usePosStore = create<PosState>((set, get) => ({
         orderNotes: targetSession?.orderNotes || '',
         tableSessions: updatedSessions,
         tables: posDatabase.getTables(),
+        takeawayQueues: posDatabase.getTakeawayQueues(),
+        deliveryQueues: posDatabase.getDeliveryQueues(),
         isTableModalOpen: false,
       });
     }
@@ -577,13 +811,22 @@ export const usePosStore = create<PosState>((set, get) => ({
 
   clearCart: () => {
     const state = get();
-    const key = getSessionKey(state.orderType, state.selectedTable?.id);
+    const key = getSessionKey(
+      state.orderType, 
+      state.selectedTable?.id, 
+      state.selectedTakeawayQueue, 
+      state.selectedDeliveryQueue
+    );
     const updatedSessions = { ...state.tableSessions };
     delete updatedSessions[key];
     posDatabase.saveTableSessions(updatedSessions);
 
     if (state.orderType === 'dine_in' && state.selectedTable) {
       posDatabase.updateTableStatus(state.selectedTable.id, 'vacant');
+    } else if (state.orderType === 'takeaway') {
+      posDatabase.updateTakeawayQueueStatus(state.selectedTakeawayQueue, 'vacant');
+    } else if (state.orderType === 'delivery') {
+      posDatabase.updateDeliveryQueueStatus(state.selectedDeliveryQueue, 'vacant');
     }
 
     set({
@@ -595,6 +838,8 @@ export const usePosStore = create<PosState>((set, get) => ({
       orderNotes: '',
       tableSessions: updatedSessions,
       tables: posDatabase.getTables(),
+      takeawayQueues: posDatabase.getTakeawayQueues(),
+      deliveryQueues: posDatabase.getDeliveryQueues(),
     });
   },
 
@@ -683,11 +928,21 @@ export const usePosStore = create<PosState>((set, get) => ({
     const state = get();
     if (state.cart.length === 0) return;
 
+    let displayIdentifier = 'Takeaway';
+    if (state.orderType === 'dine_in') {
+      displayIdentifier = state.selectedTable ? state.selectedTable.table_number : 'Dine-In';
+    } else if (state.orderType === 'takeaway') {
+      displayIdentifier = `Queue: ${state.selectedTakeawayQueue}`;
+    } else if (state.orderType === 'delivery') {
+      const dQueue = state.deliveryQueues.find(q => q.id === state.selectedDeliveryQueue);
+      displayIdentifier = `Delivery: ${state.selectedDeliveryQueue} (${dQueue?.platform_label || 'Delivery'})`;
+    }
+
     const dummyOrderNum = `KOT-${Math.floor(1000 + Math.random() * 9000)}`;
     const kotBuilder = buildKotEscPos(
       dummyOrderNum,
       state.orderType,
-      state.selectedTable?.table_number,
+      displayIdentifier,
       state.cart.map(c => ({
         item_name: c.item_name,
         variant_name: c.variant_name,
@@ -699,15 +954,41 @@ export const usePosStore = create<PosState>((set, get) => ({
       80
     );
 
-    // If dining table, mark it occupied with current running estimate
+    // Update DB status
     if (state.orderType === 'dine_in' && state.selectedTable) {
       posDatabase.updateTableStatus(state.selectedTable.id, 'occupied', undefined, state.getNetTotal());
       set({ tables: posDatabase.getTables() });
+    } else if (state.orderType === 'takeaway') {
+      const totalItems = state.cart.reduce((sum, item) => sum + item.quantity, 0);
+      posDatabase.updateTakeawayQueueStatus(
+        state.selectedTakeawayQueue,
+        'occupied',
+        state.getNetTotal(),
+        totalItems,
+        state.customerName,
+        state.customerPhone,
+        state.orderNotes
+      );
+      set({ takeawayQueues: posDatabase.getTakeawayQueues() });
+    } else if (state.orderType === 'delivery') {
+      const totalItems = state.cart.reduce((sum, item) => sum + item.quantity, 0);
+      posDatabase.updateDeliveryQueueStatus(
+        state.selectedDeliveryQueue,
+        'occupied',
+        state.getNetTotal(),
+        totalItems,
+        state.customerName,
+        state.customerPhone,
+        undefined,
+        undefined,
+        state.orderNotes
+      );
+      set({ deliveryQueues: posDatabase.getDeliveryQueues() });
     }
 
     set({
       printPreview: {
-        title: `Kitchen Order Ticket (KOT) - ${state.selectedTable ? state.selectedTable.table_number : 'Takeaway'}`,
+        title: `Kitchen Order Ticket (KOT) - ${displayIdentifier}`,
         type: 'KOT',
         plainText: `KOT #${dummyOrderNum} Dispatched to Wok & Kitchen stations`,
         hexDump: kotBuilder.getHexDump(),
@@ -715,7 +996,7 @@ export const usePosStore = create<PosState>((set, get) => ({
         kotData: {
           orderNumber: dummyOrderNum,
           orderType: state.orderType,
-          tableNumber: state.selectedTable?.table_number,
+          tableNumber: displayIdentifier,
           items: state.cart.map(c => ({
             menu_item_id: c.menu_item_id,
             variant_id: c.variant_id,
@@ -753,10 +1034,28 @@ export const usePosStore = create<PosState>((set, get) => ({
 
     const change = method === 'cash' && cashTendered ? Math.max(0, cashTendered - netTotal) : 0;
 
+    let orderTableNumber: string | undefined = undefined;
+    let orderQueueNumber: string | undefined = undefined;
+    let orderPlatform: DeliveryPlatform | undefined = undefined;
+
+    if (state.orderType === 'dine_in') {
+      orderTableNumber = state.selectedTable?.table_number;
+    } else if (state.orderType === 'takeaway') {
+      orderQueueNumber = state.selectedTakeawayQueue;
+      orderTableNumber = `Queue: ${state.selectedTakeawayQueue}`;
+    } else if (state.orderType === 'delivery') {
+      const dQueue = state.deliveryQueues.find(q => q.id === state.selectedDeliveryQueue);
+      orderQueueNumber = state.selectedDeliveryQueue;
+      orderPlatform = dQueue?.platform;
+      orderTableNumber = `Delivery: ${state.selectedDeliveryQueue} (${dQueue?.platform_label || 'Delivery'})`;
+    }
+
     const orderPayload = {
       order_type: state.orderType,
-      table_id: state.selectedTable?.id,
-      table_number: state.selectedTable?.table_number,
+      table_id: state.orderType === 'dine_in' ? state.selectedTable?.id : undefined,
+      table_number: orderTableNumber,
+      queue_number: orderQueueNumber,
+      delivery_platform: orderPlatform,
       subtotal,
       discount_amount: discountTotal,
       discount_percentage: state.discountPercentage,
@@ -799,19 +1098,30 @@ export const usePosStore = create<PosState>((set, get) => ({
     const receiptBuilder = buildCustomerReceiptEscPos(savedOrder, state.restaurant, 80);
 
     // Clean up settled table/order session
-    const key = getSessionKey(state.orderType, state.selectedTable?.id);
+    const key = getSessionKey(
+      state.orderType, 
+      state.selectedTable?.id,
+      state.selectedTakeawayQueue,
+      state.selectedDeliveryQueue
+    );
     const updatedSessions = { ...state.tableSessions };
     delete updatedSessions[key];
     posDatabase.saveTableSessions(updatedSessions);
 
     if (state.orderType === 'dine_in' && state.selectedTable) {
       posDatabase.updateTableStatus(state.selectedTable.id, 'vacant');
+    } else if (state.orderType === 'takeaway') {
+      posDatabase.updateTakeawayQueueStatus(state.selectedTakeawayQueue, 'vacant');
+    } else if (state.orderType === 'delivery') {
+      posDatabase.updateDeliveryQueueStatus(state.selectedDeliveryQueue, 'vacant');
     }
 
     // Refresh state
     set({
       recentOrders: posDatabase.getOrders(),
       tables: posDatabase.getTables(),
+      takeawayQueues: posDatabase.getTakeawayQueues(),
+      deliveryQueues: posDatabase.getDeliveryQueues(),
       activeShift: posDatabase.getActiveShift(),
       isPaymentModalOpen: false,
       cart: [],
@@ -1008,6 +1318,8 @@ export const usePosStore = create<PosState>((set, get) => ({
       cart: cartItems,
       orderType: order.order_type,
       selectedTable: table,
+      selectedTakeawayQueue: order.order_type === 'takeaway' && order.queue_number ? order.queue_number : get().selectedTakeawayQueue,
+      selectedDeliveryQueue: order.order_type === 'delivery' && order.queue_number ? order.queue_number : get().selectedDeliveryQueue,
       discountPercentage: order.discount_percentage || 0,
       discountAmount: order.discount_amount || 0,
       customerName: order.customer_name || '',
@@ -1020,6 +1332,8 @@ export const usePosStore = create<PosState>((set, get) => ({
       cart: cartItems,
       orderType: order.order_type,
       selectedTable: table,
+      selectedTakeawayQueue: nextState.selectedTakeawayQueue,
+      selectedDeliveryQueue: nextState.selectedDeliveryQueue,
       discountPercentage: order.discount_percentage || 0,
       discountAmount: order.discount_amount || 0,
       customerName: order.customer_name || '',
@@ -1027,6 +1341,8 @@ export const usePosStore = create<PosState>((set, get) => ({
       orderNotes: order.notes || '',
       tableSessions: updatedSessions,
       tables: posDatabase.getTables(),
+      takeawayQueues: posDatabase.getTakeawayQueues(),
+      deliveryQueues: posDatabase.getDeliveryQueues(),
       isHistoryModalOpen: false,
     });
   },

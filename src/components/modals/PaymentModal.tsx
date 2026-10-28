@@ -22,8 +22,14 @@ export const PaymentModal: React.FC = () => {
     cart, 
     processPayment, 
     selectedTable, 
-    orderType 
+    orderType,
+    selectedTakeawayQueue,
+    selectedDeliveryQueue,
+    deliveryQueues,
+    customerName,
   } = usePosStore();
+
+  const currentDeliveryQueueObj = deliveryQueues.find(q => q.id === selectedDeliveryQueue);
 
   const netTotal = getNetTotal();
   const [activeMethod, setActiveMethod] = useState<PaymentMethod>('cash');
@@ -78,7 +84,11 @@ export const PaymentModal: React.FC = () => {
                 Settlement & Payment
               </h2>
               <p className="text-xs text-slate-400">
-                {orderType === 'dine_in' && selectedTable ? `Table: ${selectedTable.table_number}` : 'Takeaway Order'} • {cart.length} items
+                {orderType === 'dine_in' && selectedTable 
+                  ? `Table: ${selectedTable.table_number} (${selectedTable.zone})` 
+                  : orderType === 'takeaway' 
+                  ? `Takeaway Queue: ${selectedTakeawayQueue}${customerName ? ` • ${customerName}` : ''}` 
+                  : `Delivery: ${selectedDeliveryQueue} (${currentDeliveryQueueObj?.platform_label || 'Delivery'})${customerName ? ` • ${customerName}` : ''}`} • {cart.length} items
               </p>
             </div>
           </div>

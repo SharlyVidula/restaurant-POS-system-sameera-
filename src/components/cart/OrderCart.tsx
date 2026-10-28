@@ -45,8 +45,14 @@ export const OrderCart: React.FC = () => {
     fireKOT,
     openPaymentModal,
     openTableModal,
+    openQueueModal,
+    selectedTakeawayQueue,
+    selectedDeliveryQueue,
+    deliveryQueues,
     printBillPreview,
   } = usePosStore();
+
+  const currentDeliveryQueueObj = deliveryQueues.find(q => q.id === selectedDeliveryQueue);
 
   const [showCustomerDetails, setShowCustomerDetails] = useState(false);
   const [showDiscountPicker, setShowDiscountPicker] = useState(false);
@@ -85,8 +91,30 @@ export const OrderCart: React.FC = () => {
                     ⚠ Select Table for Dine-In
                   </button>
                 )
+              ) : orderType === 'takeaway' ? (
+                <button 
+                  onClick={() => openQueueModal('takeaway')} 
+                  className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 group"
+                  title="Click to switch takeaway queue"
+                >
+                  <span>Queue: {selectedTakeawayQueue}</span>
+                  {customerName && <span className="text-slate-300 font-normal">({customerName})</span>}
+                  <span className="text-[10px] text-slate-500 group-hover:text-amber-300 underline font-normal ml-0.5">Switch</span>
+                </button>
               ) : (
-                <span className="text-blue-400 font-bold capitalize">{orderType} Order</span>
+                <button 
+                  onClick={() => openQueueModal('delivery')} 
+                  className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 group"
+                  title="Click to switch delivery queue"
+                >
+                  <span>Delivery: {selectedDeliveryQueue}</span>
+                  {currentDeliveryQueueObj?.platform_label && (
+                    <span className="text-[10px] px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-normal">
+                      {currentDeliveryQueueObj.platform_label}
+                    </span>
+                  )}
+                  <span className="text-[10px] text-slate-500 group-hover:text-emerald-300 underline font-normal ml-0.5">Switch</span>
+                </button>
               )}
             </p>
           </div>
@@ -388,7 +416,15 @@ export const OrderCart: React.FC = () => {
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black text-sm shadow-glow-amber transition-all active:scale-95 border border-amber-400/50"
         >
           <CreditCard className="w-4 h-4" />
-          <span>{orderType === 'dine_in' && !selectedTable ? 'Table & Pay' : 'Settle / Pay'}</span>
+          <span>
+            {orderType === 'dine_in' && !selectedTable 
+              ? 'Table & Pay' 
+              : orderType === 'takeaway' 
+              ? `Pay • ${selectedTakeawayQueue}` 
+              : orderType === 'delivery' 
+              ? `Dispatch & Pay • ${selectedDeliveryQueue}` 
+              : 'Settle / Pay'}
+          </span>
         </button>
       </div>
     </div>

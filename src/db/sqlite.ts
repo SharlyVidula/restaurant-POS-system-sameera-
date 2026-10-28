@@ -15,14 +15,19 @@ import {
   DailySalesReportData,
   MonthlySalesReportData,
   TableSession,
-  ItemizedSaleRecord
+  ItemizedSaleRecord,
+  OrderQueueSlot,
+  QueueType,
+  DeliveryPlatform
 } from '../types';
 import { 
   INITIAL_CATEGORIES, 
   INITIAL_MENU_ITEMS, 
   INITIAL_TABLES, 
   INITIAL_SHIFT,
-  RESTAURANT_PROFILE 
+  RESTAURANT_PROFILE,
+  INITIAL_TAKEAWAY_QUEUES,
+  INITIAL_DELIVERY_QUEUES
 } from '../data/seedData';
 
 const STORAGE_KEYS = {
@@ -38,12 +43,16 @@ const STORAGE_KEYS = {
   ADMIN_PIN: 'galle_pos_admin_pin_v1',
   LAST_FLOAT_DATE: 'galle_pos_last_float_date_v1',
   TABLE_SESSIONS: 'galle_pos_table_sessions_v1',
+  TAKEAWAY_QUEUES: 'galle_pos_takeaway_queues_v1',
+  DELIVERY_QUEUES: 'galle_pos_delivery_queues_v1',
 };
 
 class SQLiteLocalDatabase {
   private categories: Category[] = [];
   private menuItems: MenuItem[] = [];
   private tables: DiningTable[] = [];
+  private takeawayQueues: OrderQueueSlot[] = [];
+  private deliveryQueues: OrderQueueSlot[] = [];
   private orders: Order[] = [];
   private shifts: ShiftSession[] = [];
   private drawerLogs: Array<{ id: number; timestamp: string; reason: string; cashier: string }> = [];
@@ -102,6 +111,22 @@ class SQLiteLocalDatabase {
         localStorage.setItem(STORAGE_KEYS.TABLES, JSON.stringify(this.tables));
       }
 
+      const storedTakeawayQueues = localStorage.getItem(STORAGE_KEYS.TAKEAWAY_QUEUES);
+      if (storedTakeawayQueues) {
+        this.takeawayQueues = JSON.parse(storedTakeawayQueues);
+      } else {
+        this.takeawayQueues = [...INITIAL_TAKEAWAY_QUEUES];
+        localStorage.setItem(STORAGE_KEYS.TAKEAWAY_QUEUES, JSON.stringify(this.takeawayQueues));
+      }
+
+      const storedDeliveryQueues = localStorage.getItem(STORAGE_KEYS.DELIVERY_QUEUES);
+      if (storedDeliveryQueues) {
+        this.deliveryQueues = JSON.parse(storedDeliveryQueues);
+      } else {
+        this.deliveryQueues = [...INITIAL_DELIVERY_QUEUES];
+        localStorage.setItem(STORAGE_KEYS.DELIVERY_QUEUES, JSON.stringify(this.deliveryQueues));
+      }
+
       this.orders = storedOrders ? JSON.parse(storedOrders) : [];
       this.shifts = storedShifts ? JSON.parse(storedShifts) : [{ ...INITIAL_SHIFT }];
       this.activeShiftId = storedShiftId ? parseInt(storedShiftId, 10) : INITIAL_SHIFT.id;
@@ -131,6 +156,8 @@ class SQLiteLocalDatabase {
     this.categories = [...INITIAL_CATEGORIES];
     this.menuItems = [...INITIAL_MENU_ITEMS];
     this.tables = [...INITIAL_TABLES];
+    this.takeawayQueues = [...INITIAL_TAKEAWAY_QUEUES];
+    this.deliveryQueues = [...INITIAL_DELIVERY_QUEUES];
     this.orders = [];
     this.shifts = [{ ...INITIAL_SHIFT }];
     this.activeShiftId = INITIAL_SHIFT.id;
@@ -146,6 +173,8 @@ class SQLiteLocalDatabase {
       localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(this.categories));
       localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(this.menuItems));
       localStorage.setItem(STORAGE_KEYS.TABLES, JSON.stringify(this.tables));
+      localStorage.setItem(STORAGE_KEYS.TAKEAWAY_QUEUES, JSON.stringify(this.takeawayQueues));
+      localStorage.setItem(STORAGE_KEYS.DELIVERY_QUEUES, JSON.stringify(this.deliveryQueues));
       localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(this.orders));
       localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(this.shifts));
       localStorage.setItem(STORAGE_KEYS.ACTIVE_SHIFT_ID, this.activeShiftId.toString());
@@ -366,6 +395,185 @@ class SQLiteLocalDatabase {
     } catch (e) {
       console.error("Failed to persist table sessions", e);
     }
+  }
+
+  // --- ORDER QUEUES (TAKEAWAY & DELIVERY) ---
+  public getTakeawayQueues(): OrderQueueSlot[] {
+    return [...this.takeawayQueues];
+  }
+
+  public getDeliveryQueues(): OrderQueueSlot[] {
+    return [...this.deliveryQueues];
+  }
+
+  public updateTakeawayQueueStatus(
+    queueId: string, 
+    status: 'vacant' | 'occupied' | 'billed', 
+    currentAmount?: number,
+    itemCount?: number,
+    customerName?: string,
+    customerPhone?: string,
+    notes?: string
+  ): OrderQueueSlot | undefined {
+    let queue = this.takeawayQueues.find(q => q.id === queueId);
+    if (!queue) {
+      // Auto-create if dynamic queue
+      queue = {
+        id: queueId,
+        queue_number: queueId,
+        type: 'takeaway',
+        status,
+      };
+      this.takeawayQueues.push(queue);
+    }
+
+    queue.status = status;
+    queue.current_amount = currentAmount;
+    queue.item_count = itemCount;
+    if (customerName !== undefined) queue.customer_name = customerName;
+    if (customerPhone !== undefined) queue.customer_phone = customerPhone;
+    if (notes !== undefined) queue.notes = notes;
+
+    if (status === 'occupied' && !queue.occupied_at) {
+      queue.occupied_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (status === 'vacant') {
+      queue.occupied_at = undefined;
+      queue.current_amount = undefined;
+      queue.item_count = undefined;
+      queue.customer_name = undefined;
+      queue.customer_phone = undefined;
+      queue.notes = undefined;
+    }
+
+    this.persistAll();
+    return queue;
+  }
+
+  public updateDeliveryQueueStatus(
+    queueId: string, 
+    status: 'vacant' | 'occupied' | 'billed', 
+    currentAmount?: number,
+    itemCount?: number,
+    customerName?: string,
+    customerPhone?: string,
+    riderName?: string,
+    deliveryAddress?: string,
+    notes?: string
+  ): OrderQueueSlot | undefined {
+    let queue = this.deliveryQueues.find(q => q.id === queueId);
+    if (!queue) {
+      queue = {
+        id: queueId,
+        queue_number: queueId,
+        type: 'delivery',
+        platform: 'direct',
+        platform_label: 'Direct Phone',
+        status,
+      };
+      this.deliveryQueues.push(queue);
+    }
+
+    queue.status = status;
+    queue.current_amount = currentAmount;
+    queue.item_count = itemCount;
+    if (customerName !== undefined) queue.customer_name = customerName;
+    if (customerPhone !== undefined) queue.customer_phone = customerPhone;
+    if (riderName !== undefined) queue.rider_name = riderName;
+    if (deliveryAddress !== undefined) queue.delivery_address = deliveryAddress;
+    if (notes !== undefined) queue.notes = notes;
+
+    if (status === 'occupied' && !queue.occupied_at) {
+      queue.occupied_at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (status === 'vacant') {
+      queue.occupied_at = undefined;
+      queue.current_amount = undefined;
+      queue.item_count = undefined;
+      queue.customer_name = undefined;
+      queue.customer_phone = undefined;
+      queue.rider_name = undefined;
+      queue.delivery_address = undefined;
+      queue.notes = undefined;
+    }
+
+    this.persistAll();
+    return queue;
+  }
+
+  public addTakeawayQueue(customLabel?: string): OrderQueueSlot {
+    const nextNum = this.takeawayQueues.length + 1;
+    const queueCode = customLabel && customLabel.trim() 
+      ? customLabel.trim() 
+      : `TK-${nextNum.toString().padStart(2, '0')}`;
+    
+    // Check if exists
+    const existing = this.takeawayQueues.find(q => q.id === queueCode);
+    if (existing) return existing;
+
+    const newQueue: OrderQueueSlot = {
+      id: queueCode,
+      queue_number: queueCode,
+      type: 'takeaway',
+      status: 'vacant',
+    };
+    this.takeawayQueues.push(newQueue);
+    this.persistAll();
+    return newQueue;
+  }
+
+  public addDeliveryQueue(
+    platform: DeliveryPlatform, 
+    customLabel?: string, 
+    customerName?: string, 
+    phone?: string, 
+    riderName?: string, 
+    address?: string
+  ): OrderQueueSlot {
+    const nextNum = this.deliveryQueues.length + 1;
+    const queueCode = customLabel && customLabel.trim() 
+      ? customLabel.trim() 
+      : `DL-${nextNum.toString().padStart(2, '0')}`;
+
+    const platformLabels: Record<DeliveryPlatform, string> = {
+      uber_eats: 'Uber Eats',
+      pickme: 'PickMe Food',
+      direct: 'Direct Phone',
+      in_house: 'In-House Rider',
+    };
+
+    const newQueue: OrderQueueSlot = {
+      id: queueCode,
+      queue_number: queueCode,
+      type: 'delivery',
+      platform,
+      platform_label: platformLabels[platform] || 'Delivery',
+      status: 'vacant',
+      customer_name: customerName,
+      customer_phone: phone,
+      rider_name: riderName,
+      delivery_address: address,
+    };
+    this.deliveryQueues.push(newQueue);
+    this.persistAll();
+    return newQueue;
+  }
+
+  public deleteQueueSlot(type: QueueType, queueId: string): boolean {
+    if (type === 'takeaway') {
+      const idx = this.takeawayQueues.findIndex(q => q.id === queueId);
+      if (idx !== -1) {
+        this.takeawayQueues.splice(idx, 1);
+        this.persistAll();
+        return true;
+      }
+    } else {
+      const idx = this.deliveryQueues.findIndex(q => q.id === queueId);
+      if (idx !== -1) {
+        this.deliveryQueues.splice(idx, 1);
+        this.persistAll();
+        return true;
+      }
+    }
+    return false;
   }
 
   // --- ORDERS ---

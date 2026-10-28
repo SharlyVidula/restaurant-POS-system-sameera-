@@ -7,6 +7,7 @@ import { OrderCart } from './components/cart/OrderCart';
 import { VariantModal } from './components/modals/VariantModal';
 import { PaymentModal } from './components/modals/PaymentModal';
 import { TableModal } from './components/modals/TableModal';
+import { QueueModal } from './components/modals/QueueModal';
 import { PrintPreviewModal } from './components/modals/PrintPreviewModal';
 import { XReportModal } from './components/modals/XReportModal';
 import { ZReportModal } from './components/modals/ZReportModal';
@@ -30,6 +31,7 @@ export const App: React.FC = () => {
     variantModalItem,
     isPaymentModalOpen,
     isTableModalOpen,
+    isQueueModalOpen,
     printPreview,
     isXReportModalOpen,
     isZReportModalOpen,
@@ -129,6 +131,7 @@ export const App: React.FC = () => {
       {variantModalItem && <VariantModal />}
       {isPaymentModalOpen && <PaymentModal />}
       {isTableModalOpen && <TableModal />}
+      {isQueueModalOpen && <QueueModal />}
       {printPreview && <PrintPreviewModal />}
       {isXReportModalOpen && <XReportModal />}
       {isZReportModalOpen && <ZReportModal />}

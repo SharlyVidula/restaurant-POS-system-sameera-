@@ -43,7 +43,11 @@ export const PosHeader: React.FC = () => {
     openCashPayoutModal,
     openMenuPriceModal,
     openSalesReport,
-    openOpeningFloatModal
+    openOpeningFloatModal,
+    selectedTakeawayQueue,
+    selectedDeliveryQueue,
+    openQueueModal,
+    getActiveQueueCount,
   } = usePosStore();
 
   const [time, setTime] = useState<string>('');
@@ -100,6 +104,12 @@ export const PosHeader: React.FC = () => {
       <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800 shadow-inner shrink-0">
         {orderTypes.map(({ type, label, icon }) => {
           const isActive = orderType === type;
+          const activeCount = type === 'takeaway' 
+            ? getActiveQueueCount('takeaway') 
+            : type === 'delivery' 
+            ? getActiveQueueCount('delivery') 
+            : 0;
+
           return (
             <button
               key={type}
@@ -117,10 +127,25 @@ export const PosHeader: React.FC = () => {
                   {selectedTable.table_number}
                 </span>
               )}
+              {type === 'takeaway' && activeCount > 0 && (
+                <span className={`ml-0.5 px-1.5 py-0.2 text-[9px] rounded-full font-mono font-bold ${
+                  isActive ? 'bg-slate-950 text-amber-300' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                }`}>
+                  {activeCount}
+                </span>
+              )}
+              {type === 'delivery' && activeCount > 0 && (
+                <span className={`ml-0.5 px-1.5 py-0.2 text-[9px] rounded-full font-mono font-bold ${
+                  isActive ? 'bg-slate-950 text-emerald-300' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                }`}>
+                  {activeCount}
+                </span>
+              )}
             </button>
           );
         })}
 
+        {/* Dine-In Floor / Table Selector Button */}
         {orderType === 'dine_in' && (
           <button
             onClick={openTableModal}
@@ -132,6 +157,28 @@ export const PosHeader: React.FC = () => {
           >
             <Layers className="w-3.5 h-3.5" />
             <span>{selectedTable ? `T:${selectedTable.table_number}` : 'Table'}</span>
+          </button>
+        )}
+
+        {/* Takeaway Queue Selector Button */}
+        {orderType === 'takeaway' && (
+          <button
+            onClick={() => openQueueModal('takeaway')}
+            className="ml-0.5 flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all shadow-sm"
+          >
+            <ShoppingBag className="w-3.5 h-3.5 text-amber-400" />
+            <span>Q:{selectedTakeawayQueue}</span>
+          </button>
+        )}
+
+        {/* Delivery Queue Selector Button */}
+        {orderType === 'delivery' && (
+          <button
+            onClick={() => openQueueModal('delivery')}
+            className="ml-0.5 flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all shadow-sm"
+          >
+            <Bike className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Q:{selectedDeliveryQueue}</span>
           </button>
         )}
       </div>

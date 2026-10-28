@@ -50,10 +50,35 @@ export interface DiningTable {
   current_amount?: number;
 }
 
+export type QueueType = 'takeaway' | 'delivery';
+export type DeliveryPlatform = 'uber_eats' | 'pickme' | 'direct' | 'in_house';
+
+export interface OrderQueueSlot {
+  id: string; // e.g. "TK-01", "DL-01"
+  queue_number: string;
+  type: QueueType;
+  platform?: DeliveryPlatform;
+  platform_label?: string;
+  status: 'vacant' | 'occupied' | 'billed';
+  customer_name?: string;
+  customer_phone?: string;
+  rider_name?: string;
+  delivery_address?: string;
+  occupied_at?: string;
+  current_amount?: number;
+  item_count?: number;
+  notes?: string;
+}
+
 export interface TableSession {
   table_id: number | null;
   table_number?: string;
+  queue_id?: string;
+  queue_number?: string;
   order_type: OrderType;
+  delivery_platform?: DeliveryPlatform;
+  rider_name?: string;
+  delivery_address?: string;
   cart: CartItem[];
   discountPercentage: number;
   discountAmount: number;
@@ -118,6 +143,10 @@ export interface Order {
   qr_reference?: string;
   customer_name?: string;
   customer_phone?: string;
+  queue_number?: string;
+  delivery_platform?: DeliveryPlatform;
+  rider_name?: string;
+  delivery_address?: string;
   notes?: string;
   created_at: string;
   paid_at?: string;
