@@ -131,6 +131,14 @@ interface PosState {
   addCategory: (name: string, icon?: string, color?: string) => Category;
   printPayoutVoucher: (txn: CashTransaction) => void;
 
+  // Menu Hotkeys & Fast Keyboard Entry
+  isHotkeysModalOpen: boolean;
+  openHotkeysModal: () => void;
+  closeHotkeysModal: () => void;
+  updateMenuItemHotkey: (itemId: number, hotkey: string) => boolean;
+  batchUpdateHotkeys: (assignments: Record<number, string>) => void;
+  addItemByHotkey: (code: string) => { success: boolean; message: string; item?: MenuItem };
+
   setOrderType: (type: OrderType) => void;
   setSelectedCategory: (categoryId: number | null) => void;
   setSearchQuery: (query: string) => void;
@@ -381,6 +389,7 @@ export const usePosStore = create<PosState>((set, get) => ({
   isDrawerLogModalOpen: false,
   isCashPayoutModalOpen: false,
   isMenuPriceModalOpen: false,
+  isHotkeysModalOpen: false,
   isAdminAuthModalOpen: false,
   isOpeningFloatModalOpen: false,
   adminAuthTitle: 'Admin Authorization Required',
@@ -688,11 +697,24 @@ export const usePosStore = create<PosState>((set, get) => ({
     }
   },
 
-  openVariantModal: (item) => set({ variantModalItem: item }),
+  openVariantModal: (item) => {
+    const state = get();
+    if (state.orderType === 'dine_in' && !state.selectedTable) {
+      state.openTableModal();
+      return;
+    }
+    set({ variantModalItem: item });
+  },
+
   closeVariantModal: () => set({ variantModalItem: null }),
 
   addBatchToCart: (item, batch, notes = '', modifiers = []) => {
     const state = get();
+    if (state.orderType === 'dine_in' && !state.selectedTable) {
+      state.openTableModal();
+      return;
+    }
+
     let currentCart = [...state.cart];
     const modifierTotal = modifiers.reduce((acc, m) => acc + m.price, 0);
     const modifierKey = modifiers.map(m => m.name).sort().join('|');
@@ -749,6 +771,10 @@ export const usePosStore = create<PosState>((set, get) => ({
 
   quickAddStepper: (item, delta) => {
     const state = get();
+    if (state.orderType === 'dine_in' && !state.selectedTable) {
+      state.openTableModal();
+      return;
+    }
     const existing = state.cart.find(c => c.menu_item_id === item.id && !c.variant_id);
     let updatedCart = [...state.cart];
     if (existing) {
@@ -1497,5 +1523,69 @@ export const usePosStore = create<PosState>((set, get) => ({
       categories: posDatabase.getCategories(),
     });
     return newCat;
+  },
+
+  openHotkeysModal: () => set({ isHotkeysModalOpen: true }),
+  closeHotkeysModal: () => set({ isHotkeysModalOpen: false }),
+
+  updateMenuItemHotkey: (itemId: number, hotkey: string) => {
+    const updated = posDatabase.updateMenuItemHotkey(itemId, hotkey);
+    if (updated) {
+      set({ menuItems: posDatabase.getMenuItems() });
+      return true;
+    }
+    return false;
+  },
+
+  batchUpdateHotkeys: (assignments: Record<number, string>) => {
+    const items = posDatabase.batchUpdateHotkeys(assignments);
+    set({ menuItems: items });
+  },
+
+  addItemByHotkey: (code: string) => {
+    const state = get();
+    const cleanCode = code.trim();
+    if (!cleanCode) return { success: false, message: 'Empty hotkey code' };
+
+    // Find item matching hotkey or ID
+    const item = state.menuItems.find(m => 
+      (m.hotkey && m.hotkey.toLowerCase() === cleanCode.toLowerCase()) || 
+      String(m.id) === cleanCode
+    );
+
+    if (!item) {
+      return { success: false, message: `No menu item found for hotkey #${cleanCode}` };
+    }
+
+    if (!item.is_available) {
+      return { success: false, message: `"${item.name}" is marked unavailable (86'd)` };
+    }
+
+    // Check dine-in table guard
+    if (state.orderType === 'dine_in' && !state.selectedTable) {
+      return { 
+        success: false, 
+        message: 'Please select a dining table on the floor plan before adding items!',
+        item 
+      };
+    }
+
+    // If item has variants, open variant modal so cashier can select portion
+    if (item.variants && item.variants.length > 0) {
+      state.openVariantModal(item);
+      return { 
+        success: true, 
+        message: `Opened options for "${item.name}"`, 
+        item 
+      };
+    }
+
+    // Item has no variants, add directly to cart
+    state.addToCart(item, undefined, 1);
+    return { 
+      success: true, 
+      message: `Added "${item.name}" (Rs. ${item.base_price.toLocaleString()}) to order`, 
+      item 
+    };
   },
 }));

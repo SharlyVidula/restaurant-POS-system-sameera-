@@ -37,6 +37,7 @@ export interface MenuItem {
   default_notes?: string[];
   station?: 'Wok Station' | 'Curry Counter' | 'Short Eats' | 'Beverage Bar' | 'Kitchen' | 'Kottu Griddle' | 'Juice Bar' | 'Dessert Bar';
   badge?: string;
+  hotkey?: string; // Quick keyboard entry code (e.g. '101', '1', '25')
 }
 
 export interface DiningTable {

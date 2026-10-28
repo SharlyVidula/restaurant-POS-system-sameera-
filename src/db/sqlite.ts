@@ -89,17 +89,21 @@ class SQLiteLocalDatabase {
         // Auto-merge any newly added menu items from seed data
         const existingItemIds = new Set(parsedMenuItems.map(i => i.id));
         const missingItems = INITIAL_MENU_ITEMS.filter(i => !existingItemIds.has(i.id));
-        this.menuItems = [...parsedMenuItems, ...missingItems];
+        this.menuItems = [...parsedMenuItems, ...missingItems].map(item => ({
+          ...item,
+          hotkey: item.hotkey ? String(item.hotkey).trim() : String(item.id),
+        }));
 
         if (missingCats.length > 0) {
           localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(this.categories));
         }
-        if (missingItems.length > 0) {
-          localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(this.menuItems));
-        }
+        localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(this.menuItems));
       } else {
         this.categories = [...INITIAL_CATEGORIES];
-        this.menuItems = [...INITIAL_MENU_ITEMS];
+        this.menuItems = INITIAL_MENU_ITEMS.map(item => ({
+          ...item,
+          hotkey: item.hotkey ? String(item.hotkey).trim() : String(item.id),
+        }));
         localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(this.categories));
         localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(this.menuItems));
       }
@@ -154,7 +158,10 @@ class SQLiteLocalDatabase {
 
   public resetToSeedData(): void {
     this.categories = [...INITIAL_CATEGORIES];
-    this.menuItems = [...INITIAL_MENU_ITEMS];
+    this.menuItems = INITIAL_MENU_ITEMS.map(item => ({
+      ...item,
+      hotkey: item.hotkey ? String(item.hotkey).trim() : String(item.id),
+    }));
     this.tables = [...INITIAL_TABLES];
     this.takeawayQueues = [...INITIAL_TAKEAWAY_QUEUES];
     this.deliveryQueues = [...INITIAL_DELIVERY_QUEUES];
@@ -350,6 +357,26 @@ class SQLiteLocalDatabase {
 
     this.persistAll();
     return true;
+  }
+
+  public updateMenuItemHotkey(itemId: number, hotkey: string): MenuItem | null {
+    const item = this.menuItems.find(m => m.id === itemId);
+    if (!item) return null;
+    item.hotkey = hotkey.trim();
+    this.persistAll();
+    return item;
+  }
+
+  public batchUpdateHotkeys(assignments: Record<number, string>): MenuItem[] {
+    Object.entries(assignments).forEach(([idStr, code]) => {
+      const id = Number(idStr);
+      const item = this.menuItems.find(m => m.id === id);
+      if (item) {
+        item.hotkey = code.trim();
+      }
+    });
+    this.persistAll();
+    return [...this.menuItems];
   }
 
   public getPriceAudits(): PriceChangeAudit[] {

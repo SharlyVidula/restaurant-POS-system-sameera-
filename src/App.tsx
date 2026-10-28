@@ -3,6 +3,7 @@ import { usePosStore } from './store/posStore';
 import { PosHeader } from './components/header/PosHeader';
 import { CategoryTabs } from './components/menu/CategoryTabs';
 import { MenuItemCard } from './components/menu/MenuItemCard';
+import { TableSelectionDashboard } from './components/tables/TableSelectionDashboard';
 import { OrderCart } from './components/cart/OrderCart';
 import { VariantModal } from './components/modals/VariantModal';
 import { PaymentModal } from './components/modals/PaymentModal';
@@ -15,9 +16,11 @@ import { HistoryModal } from './components/modals/HistoryModal';
 import { AdminAuthModal } from './components/modals/AdminAuthModal';
 import { CashPayoutModal } from './components/modals/CashPayoutModal';
 import { MenuPriceModal } from './components/modals/MenuPriceModal';
+import { HotkeysModal } from './components/modals/HotkeysModal';
 import { SalesReportModal } from './components/modals/SalesReportModal';
 import { OpeningFloatModal } from './components/modals/OpeningFloatModal';
 import { SplashScreen } from './components/common/SplashScreen';
+import { QuickHotkeyHUD } from './components/common/QuickHotkeyHUD';
 import { Sparkles, Utensils } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -28,6 +31,9 @@ export const App: React.FC = () => {
     selectedCategoryId, 
     searchQuery,
     categories,
+    orderType,
+    selectedTable,
+    selectTable,
     variantModalItem,
     isPaymentModalOpen,
     isTableModalOpen,
@@ -39,6 +45,7 @@ export const App: React.FC = () => {
     isAdminAuthModalOpen,
     isCashPayoutModalOpen,
     isMenuPriceModalOpen,
+    isHotkeysModalOpen,
     isSalesReportModalOpen,
     closeSalesReport,
     isOpeningFloatModalOpen,
@@ -69,43 +76,64 @@ export const App: React.FC = () => {
 
       {/* Main Workspace: Menu on Left/Center, Live Cart on Right */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Side: Category Navigator & Food Item Grid */}
+        {/* Left Side: Table Selection Floor Plan (Dine-In mandatory) OR Category Navigator & Food Item Grid */}
         <main className="flex-1 flex flex-col overflow-hidden bg-[#0e1424]">
-          {/* Category Tabs & Search Bar */}
-          <CategoryTabs />
+          {orderType === 'dine_in' && !selectedTable ? (
+            <TableSelectionDashboard />
+          ) : (
+            <>
+              {/* Category Tabs & Search Bar */}
+              <CategoryTabs />
 
-          {/* Items Header Banner */}
-          <div className="px-5 py-2 bg-slate-900/40 border-b border-slate-800/60 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-300 uppercase tracking-wide">
-                {selectedCategoryObj ? selectedCategoryObj.name : 'Full Menu Catalog'}
-              </span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800 text-amber-400">
-                {filteredItems.length} items
-              </span>
-            </div>
+              {/* Items Header Banner */}
+              <div className="px-5 py-2 bg-slate-900/40 border-b border-slate-800/60 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wide">
+                    {selectedCategoryObj ? selectedCategoryObj.name : 'Full Menu Catalog'}
+                  </span>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800 text-amber-400">
+                    {filteredItems.length} items
+                  </span>
+                </div>
 
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <span className="hidden sm:inline">Galle Fort Station Dispatch Enabled</span>
-            </div>
-          </div>
-
-          {/* Menu Items Grid - Optimized for 4:3 square monitors (3-4 columns) */}
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 scrollbar-thin scrollbar-thumb-slate-800">
-            {filteredItems.length === 0 ? (
-              <div className="h-64 flex flex-col items-center justify-center text-slate-500">
-                <Utensils className="w-10 h-10 mb-2 opacity-40" />
-                <p className="text-sm font-semibold">No menu items match your search.</p>
-                <p className="text-xs text-slate-600 mt-1">Try clearing filters or search keywords.</p>
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  {orderType === 'dine_in' && selectedTable ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full text-xs">
+                        Table: {selectedTable.table_number} ({selectedTable.zone})
+                      </span>
+                      <button
+                        onClick={() => selectTable(null)}
+                        className="text-[11px] font-bold text-slate-300 hover:text-amber-300 bg-slate-800 hover:bg-slate-700 px-2.5 py-0.5 rounded-md transition-all border border-slate-700"
+                        title="Return to floor plan to switch table"
+                      >
+                        Change Table
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="hidden sm:inline">Galle Fort Station Dispatch Enabled</span>
+                  )}
+                </div>
               </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
-                {filteredItems.map((item) => (
-                  <MenuItemCard key={item.id} item={item} />
-                ))}
+
+              {/* Menu Items Grid - Optimized for 4:3 square monitors (3-4 columns) */}
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 scrollbar-thin scrollbar-thumb-slate-800">
+                {filteredItems.length === 0 ? (
+                  <div className="h-64 flex flex-col items-center justify-center text-slate-500">
+                    <Utensils className="w-10 h-10 mb-2 opacity-40" />
+                    <p className="text-sm font-semibold">No menu items match your search.</p>
+                    <p className="text-xs text-slate-600 mt-1">Try clearing filters or search keywords.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
+                    {filteredItems.map((item) => (
+                      <MenuItemCard key={item.id} item={item} />
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
         </main>
 
         {/* Right Side: Live Order Cart & Settle Panel - Compact on 4:3 Square Screens */}
@@ -139,7 +167,11 @@ export const App: React.FC = () => {
       {isAdminAuthModalOpen && <AdminAuthModal />}
       {isCashPayoutModalOpen && <CashPayoutModal />}
       {isMenuPriceModalOpen && <MenuPriceModal />}
+      {isHotkeysModalOpen && <HotkeysModal />}
       <SalesReportModal isOpen={isSalesReportModalOpen} onClose={closeSalesReport} />
+
+      {/* Global Hotkey HUD & Keyboard Capture */}
+      <QuickHotkeyHUD />
     </div>
   );
 };

@@ -49,6 +49,15 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item }) => {
       <div>
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-1.5 flex-wrap">
+            {/* Quick Hotkey Badge */}
+            <span 
+              className="text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded-md bg-slate-950 text-amber-400 border border-amber-500/40 flex items-center gap-0.5 shadow-sm"
+              title={`Quick Hotkey: ${item.hotkey || item.id} (Type ${item.hotkey || item.id} & press Enter)`}
+            >
+              <span className="text-[9px] text-slate-500 font-bold">#</span>
+              <span>{item.hotkey || item.id}</span>
+            </span>
+
             {item.station && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700/60 flex items-center gap-1">
                 <ChefHat className="w-2.5 h-2.5 text-amber-400" />

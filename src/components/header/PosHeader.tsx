@@ -17,7 +17,8 @@ import {
   ShieldCheck,
   BarChart3,
   Banknote,
-  Package
+  Package,
+  Keyboard
 } from 'lucide-react';
 import { OrderType } from '../../types';
 import { GitUpdateModal } from '../modals/GitUpdateModal';
@@ -30,6 +31,7 @@ export const PosHeader: React.FC = () => {
     orderType,
     setOrderType,
     selectedTable,
+    selectTable,
     openTableModal,
     openXReport,
     openZReport,
@@ -42,6 +44,7 @@ export const PosHeader: React.FC = () => {
     requireAdminAuth,
     openCashPayoutModal,
     openMenuPriceModal,
+    openHotkeysModal,
     openSalesReport,
     openOpeningFloatModal,
     selectedTakeawayQueue,
@@ -113,7 +116,18 @@ export const PosHeader: React.FC = () => {
           return (
             <button
               key={type}
-              onClick={() => setOrderType(type)}
+              onClick={() => {
+                if (type === 'dine_in') {
+                  if (orderType === 'dine_in' && selectedTable) {
+                    selectTable(null);
+                  } else {
+                    setOrderType('dine_in');
+                  }
+                } else {
+                  setOrderType(type);
+                }
+              }}
+              title={type === 'dine_in' && isActive && selectedTable ? 'Click to change table / view floor plan' : undefined}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
                 isActive
                   ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-md font-bold'
@@ -148,7 +162,14 @@ export const PosHeader: React.FC = () => {
         {/* Dine-In Floor / Table Selector Button */}
         {orderType === 'dine_in' && (
           <button
-            onClick={openTableModal}
+            onClick={() => {
+              if (selectedTable) {
+                selectTable(null);
+              } else {
+                openTableModal();
+              }
+            }}
+            title={selectedTable ? "Click to change table / open floor plan" : "Select Table"}
             className={`ml-0.5 flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold border transition-all ${
               selectedTable
                 ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
@@ -156,7 +177,7 @@ export const PosHeader: React.FC = () => {
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>{selectedTable ? `T:${selectedTable.table_number}` : 'Table'}</span>
+            <span>{selectedTable ? `T:${selectedTable.table_number}` : 'Select Table'}</span>
           </button>
         )}
 
@@ -238,6 +259,22 @@ export const PosHeader: React.FC = () => {
         >
           <Package className="w-3.5 h-3.5 text-amber-400" />
           <span className="hidden md:inline">Inventory</span>
+        </button>
+
+        {/* Hotkeys PLU Manager (Admin) */}
+        <button
+          onClick={() => {
+            if (currentUserRole === 'admin') {
+              openHotkeysModal();
+            } else {
+              requireAdminAuth('Manage Menu Item Hotkeys', openHotkeysModal);
+            }
+          }}
+          title="Configure Quick Item Hotkeys / PLU Numbers (Admin Authorized)"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-amber-300 border border-slate-700 hover:bg-slate-700 hover:border-amber-500/40 transition-all cursor-pointer"
+        >
+          <Keyboard className="w-3.5 h-3.5 text-amber-400" />
+          <span className="hidden md:inline">Hotkeys</span>
         </button>
 
         {/* Order History */}

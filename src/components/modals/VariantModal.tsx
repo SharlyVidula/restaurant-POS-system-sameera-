@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePosStore } from '../../store/posStore';
 import { CartItemModifier } from '../../types';
 import { X, Plus, Minus, Check, Sparkles, ChefHat, Layers } from 'lucide-react';
@@ -126,6 +126,36 @@ export const VariantModal: React.FC = () => {
       );
     }
   };
+
+  // Keyboard shortcut listener for Variant Modal (Enter to confirm, Esc to close, 1/2 for portions)
+  useEffect(() => {
+    const handleModalKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleConfirm();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        closeVariantModal();
+      } else if (hasVariants && variantModalItem?.variants) {
+        // '1' selects 1st variant (Half), '2' selects 2nd variant (Full)
+        if (e.key === '1' && variantModalItem.variants[0]) {
+          e.preventDefault();
+          const v0 = variantModalItem.variants[0];
+          setVariantQuantities({ [v0.id]: 1 });
+        } else if (e.key === '2' && variantModalItem.variants[1]) {
+          e.preventDefault();
+          const v1 = variantModalItem.variants[1];
+          setVariantQuantities({ [v1.id]: 1 });
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleModalKey);
+    return () => window.removeEventListener('keydown', handleModalKey);
+  }, [totalItemsCount, variantQuantities, nonVariantQuantity, extraAddons, selectedPresetNotes, customNote, sugarLevel, withIce]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 select-none animate-fadeIn overflow-y-auto">

@@ -11,7 +11,8 @@ import {
   Cigarette,
   LayoutGrid,
   Search,
-  X
+  X,
+  Keyboard
 } from 'lucide-react';
 
 export const CategoryTabs: React.FC = () => {
@@ -20,7 +21,10 @@ export const CategoryTabs: React.FC = () => {
     selectedCategoryId, 
     setSelectedCategory, 
     searchQuery, 
-    setSearchQuery 
+    setSearchQuery,
+    openHotkeysModal,
+    currentUserRole,
+    requireAdminAuth
   } = usePosStore();
 
   const getCategoryIcon = (name: string) => {
@@ -93,24 +97,41 @@ export const CategoryTabs: React.FC = () => {
         })}
       </div>
 
-      {/* Instant Search Bar - Compact on Square Monitors */}
-      <div className="relative w-40 sm:w-48 lg:w-56 shrink-0">
-        <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search..."
-          className="w-full bg-slate-950/90 border border-slate-700 rounded-lg pl-8 pr-7 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors shadow-inner"
-        />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-0.5"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        )}
+      {/* Instant Search Bar & Hotkey indicator */}
+      <div className="flex items-center gap-2 shrink-0">
+        <div 
+          onClick={() => {
+            if (currentUserRole === 'admin') {
+              openHotkeysModal();
+            } else {
+              requireAdminAuth('Manage Menu Item Hotkeys', openHotkeysModal);
+            }
+          }} 
+          title="Hotkeys Enabled: Type item # (e.g. 101) & Enter to add without mouse! Click to manage."
+          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-950/90 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold cursor-pointer hover:bg-slate-800 hover:border-amber-500/60 transition-all shadow-inner"
+        >
+          <Keyboard className="w-3.5 h-3.5 text-amber-400" />
+          <span className="text-[11px]">⌨ PLU Hotkeys</span>
+        </div>
+
+        <div className="relative w-36 sm:w-44 lg:w-48">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search..."
+            className="w-full bg-slate-950/90 border border-slate-700 rounded-lg pl-8 pr-7 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors shadow-inner"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-0.5"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

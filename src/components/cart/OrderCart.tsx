@@ -23,6 +23,7 @@ export const OrderCart: React.FC = () => {
     cart,
     orderType,
     selectedTable,
+    selectTable,
     updateCartQuantity,
     removeCartItem,
     clearCart,
@@ -87,7 +88,7 @@ export const OrderCart: React.FC = () => {
                 selectedTable ? (
                   <span className="text-emerald-400 font-bold">Table: {selectedTable.table_number} ({selectedTable.zone})</span>
                 ) : (
-                  <button onClick={openTableModal} className="text-amber-400 hover:underline font-bold animate-pulse">
+                  <button onClick={() => selectTable(null)} className="text-amber-400 hover:underline font-bold animate-pulse">
                     ⚠ Select Table for Dine-In
                   </button>
                 )
@@ -135,15 +136,27 @@ export const OrderCart: React.FC = () => {
       {/* Cart Items Scrollable Area */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2.5 scrollbar-thin scrollbar-thumb-slate-800">
         {cart.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
-            <div className="w-16 h-16 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center mb-3 text-slate-600">
-              <Receipt className="w-8 h-8" />
+          orderType === 'dine_in' && !selectedTable ? (
+            <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
+              <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-3 text-amber-400 shadow-glow-amber">
+                <Layers className="w-8 h-8" />
+              </div>
+              <h4 className="font-bold text-slate-200 text-sm">Table Selection Required</h4>
+              <p className="text-xs text-slate-400 mt-1 max-w-[220px]">
+                Please select a table from the floor layout to begin adding items to an order.
+              </p>
             </div>
-            <h4 className="font-bold text-slate-300 text-sm">Cart is Empty</h4>
-            <p className="text-xs text-slate-500 mt-1 max-w-[220px]">
-              Tap items or short eats from the menu to build the order.
-            </p>
-          </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
+              <div className="w-16 h-16 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center mb-3 text-slate-600">
+                <Receipt className="w-8 h-8" />
+              </div>
+              <h4 className="font-bold text-slate-300 text-sm">Cart is Empty</h4>
+              <p className="text-xs text-slate-500 mt-1 max-w-[220px]">
+                Tap items or short eats from the menu to build the order.
+              </p>
+            </div>
+          )
         ) : (
           cart.map((item) => (
             <div
@@ -384,7 +397,7 @@ export const OrderCart: React.FC = () => {
           {/* Fire KOT Button */}
           <button
             onClick={fireKOT}
-            disabled={cart.length === 0}
+            disabled={cart.length === 0 || (orderType === 'dine_in' && !selectedTable)}
             className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 font-bold text-xs border border-slate-700 transition-all shadow-md active:scale-95"
           >
             <Send className="w-3.5 h-3.5 text-orange-400" />
@@ -394,7 +407,7 @@ export const OrderCart: React.FC = () => {
           {/* Print Guest Bill Button */}
           <button
             onClick={printBillPreview}
-            disabled={cart.length === 0}
+            disabled={cart.length === 0 || (orderType === 'dine_in' && !selectedTable)}
             className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 font-bold text-xs border border-slate-700 transition-all shadow-md active:scale-95"
           >
             <Receipt className="w-3.5 h-3.5 text-amber-400" />
@@ -405,20 +418,20 @@ export const OrderCart: React.FC = () => {
         {/* Settle Bill Button */}
         <button
           onClick={() => {
-            if (cart.length === 0) return;
             if (orderType === 'dine_in' && !selectedTable) {
-              openTableModal();
+              selectTable(null);
               return;
             }
+            if (cart.length === 0) return;
             openPaymentModal();
           }}
-          disabled={cart.length === 0}
+          disabled={cart.length === 0 || (orderType === 'dine_in' && !selectedTable)}
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black text-sm shadow-glow-amber transition-all active:scale-95 border border-amber-400/50"
         >
           <CreditCard className="w-4 h-4" />
           <span>
             {orderType === 'dine_in' && !selectedTable 
-              ? 'Table & Pay' 
+              ? 'Select Table on Floor Plan' 
               : orderType === 'takeaway' 
               ? `Pay • ${selectedTakeawayQueue}` 
               : orderType === 'delivery' 

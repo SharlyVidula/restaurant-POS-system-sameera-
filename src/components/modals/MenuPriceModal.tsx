@@ -69,6 +69,7 @@ export const MenuPriceModal: React.FC = () => {
   const [editDescription, setEditDescription] = useState<string>('');
   const [editIsAvailable, setEditIsAvailable] = useState<boolean>(true);
   const [editBasePrice, setEditBasePrice] = useState<number>(0);
+  const [editHotkey, setEditHotkey] = useState<string>('');
   const [editHasVariants, setEditHasVariants] = useState<boolean>(false);
   const [editVariants, setEditVariants] = useState<Array<{ id: number; variant_name: string; price_adjustment: number }>>([]);
   const [savedNotice, setSavedNotice] = useState<string | null>(null);
@@ -79,6 +80,7 @@ export const MenuPriceModal: React.FC = () => {
   const [newCategoryId, setNewCategoryId] = useState<number>(categories[0]?.id || 1);
   const [newStation, setNewStation] = useState<MenuItem['station']>('Wok Station');
   const [newBadge, setNewBadge] = useState<string>('None');
+  const [newHotkey, setNewHotkey] = useState<string>('');
   const [newDescription, setNewDescription] = useState('');
   const [newBasePrice, setNewBasePrice] = useState<number>(500);
   const [newHasVariants, setNewHasVariants] = useState<boolean>(true);
@@ -105,6 +107,7 @@ export const MenuPriceModal: React.FC = () => {
     setEditDescription(item.description || '');
     setEditIsAvailable(item.is_available);
     setEditBasePrice(item.base_price);
+    setEditHotkey(item.hotkey || String(item.id));
     const hasV = !!(item.variants && item.variants.length > 0);
     setEditHasVariants(hasV);
     setEditVariants(
@@ -247,6 +250,7 @@ export const MenuPriceModal: React.FC = () => {
       description: editDescription.trim() || undefined,
       is_available: editIsAvailable,
       base_price: Number(editBasePrice) || 0,
+      hotkey: editHotkey.trim() || String(selectedItem.id),
       variants: cleanedVariants,
     };
 
@@ -305,6 +309,7 @@ export const MenuPriceModal: React.FC = () => {
       description: newDescription.trim() || undefined,
       station: newStation,
       badge: newBadge === 'None' ? undefined : newBadge,
+      hotkey: newHotkey.trim() || undefined,
       variants: variantsToSave,
       default_notes: newDefaultNotes 
         ? newDefaultNotes.split(',').map(s => s.trim()).filter(Boolean)
@@ -315,6 +320,7 @@ export const MenuPriceModal: React.FC = () => {
     
     // Reset form
     setNewName('');
+    setNewHotkey('');
     setNewDescription('');
     setNewDefaultNotes('');
     
@@ -617,6 +623,23 @@ export const MenuPriceModal: React.FC = () => {
                             </option>
                           ))}
                         </select>
+                      </div>
+
+                      {/* PLU / Hotkey Code */}
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                          PLU / Hotkey Number
+                        </label>
+                        <div className="relative flex items-center bg-slate-950 border border-slate-800 rounded-xl focus-within:border-amber-500">
+                          <span className="pl-3 text-slate-500 font-mono text-xs">#</span>
+                          <input
+                            type="text"
+                            value={editHotkey}
+                            onChange={(e) => setEditHotkey(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
+                            placeholder={selectedItem ? String(selectedItem.id) : '101'}
+                            className="w-full px-2 py-2 bg-transparent text-xs text-amber-300 font-mono font-bold focus:outline-none"
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -1002,6 +1025,23 @@ export const MenuPriceModal: React.FC = () => {
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  {/* PLU / Hotkey Code */}
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                      PLU / Hotkey Code (Optional)
+                    </label>
+                    <div className="relative flex items-center bg-slate-950 border border-slate-800 rounded-xl focus-within:border-amber-500">
+                      <span className="pl-3.5 text-slate-500 font-mono text-xs">#</span>
+                      <input
+                        type="text"
+                        placeholder="e.g. 101, 25, 9"
+                        value={newHotkey}
+                        onChange={(e) => setNewHotkey(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
+                        className="w-full px-2.5 py-2.5 bg-transparent text-xs font-mono font-bold text-amber-300 placeholder-slate-600 focus:outline-none"
+                      />
+                    </div>
                   </div>
 
                   {/* Base Price */}
