@@ -17,7 +17,9 @@ import {
   Layers,
   ChevronRight,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  Keyboard,
+  CornerDownLeft
 } from 'lucide-react';
 
 export const QueueModal: React.FC = () => {
@@ -41,6 +43,7 @@ export const QueueModal: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'takeaway' | 'delivery'>(queueModalType || 'takeaway');
   const [selectedPlatformFilter, setSelectedPlatformFilter] = useState<string>('all');
+  const [focusedQueueIndex, setFocusedQueueIndex] = useState<number>(0);
   
   // New Takeaway Queue form state
   const [showAddTakeaway, setShowAddTakeaway] = useState(false);
@@ -59,6 +62,7 @@ export const QueueModal: React.FC = () => {
   React.useEffect(() => {
     if (queueModalType) {
       setActiveTab(queueModalType);
+      setFocusedQueueIndex(0);
     }
   }, [queueModalType]);
 
@@ -116,6 +120,72 @@ export const QueueModal: React.FC = () => {
     if (selectedPlatformFilter === 'all') return true;
     return q.platform === selectedPlatformFilter;
   });
+
+  // Keyboard navigation for QueueModal
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' || 
+        target.tagName === 'TEXTAREA' || 
+        target.tagName === 'SELECT' || 
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        setActiveTab(prev => (prev === 'takeaway' ? 'delivery' : 'takeaway'));
+        setFocusedQueueIndex(0);
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeQueueModal();
+        return;
+      }
+
+      const currentList = activeTab === 'takeaway' ? takeawayQueues : filteredDeliveryQueues;
+      if (currentList.length === 0) return;
+
+      const cols = activeTab === 'takeaway' ? 4 : 3;
+
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setFocusedQueueIndex(prev => (prev < currentList.length - 1 ? prev + 1 : 0));
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setFocusedQueueIndex(prev => (prev > 0 ? prev - 1 : currentList.length - 1));
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedQueueIndex(prev => {
+          const next = prev + cols;
+          return next < currentList.length ? next : prev;
+        });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedQueueIndex(prev => {
+          const next = prev - cols;
+          return next >= 0 ? next : prev;
+        });
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const activeQueue = currentList[focusedQueueIndex];
+        if (activeQueue) {
+          if (activeTab === 'takeaway') {
+            selectTakeawayQueue(activeQueue.id);
+          } else {
+            selectDeliveryQueue(activeQueue.id);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab, takeawayQueues, filteredDeliveryQueues, focusedQueueIndex, selectTakeawayQueue, selectDeliveryQueue, closeQueueModal]);
 
   const handleCreateTakeawayQueue = (e: React.FormEvent) => {
     e.preventDefault();
@@ -425,11 +495,12 @@ export const QueueModal: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {takeawayQueues.map((queue) => {
+                {takeawayQueues.map((queue, idx) => {
                   const sessionKey = `takeaway-${queue.id}`;
                   const session = tableSessions[sessionKey];
                   const sessionItemCount = session?.cart ? session.cart.reduce((sum, item) => sum + item.quantity, 0) : 0;
                   const isCurrentSelected = orderType === 'takeaway' && selectedTakeawayQueue === queue.id;
+                  const isKeyboardFocused = activeTab === 'takeaway' && focusedQueueIndex === idx;
                   const isOccupied = sessionItemCount > 0 || queue.status === 'occupied';
 
                   // Calculate subtotal for session if any
@@ -445,15 +516,20 @@ export const QueueModal: React.FC = () => {
                     statusBadge = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
                   }
 
-                  if (isCurrentSelected) {
+                  if (isKeyboardFocused) {
                     statusBorder = 'border-amber-400 ring-2 ring-amber-400 shadow-glow-amber';
+                    statusBg = 'bg-amber-950/30';
+                  } else if (isCurrentSelected) {
+                    statusBorder = 'border-emerald-400 ring-2 ring-emerald-400 shadow-glow-emerald';
                   }
 
                   return (
                     <div
                       key={queue.id}
                       onClick={() => selectTakeawayQueue(queue.id)}
-                      className={`p-3.5 rounded-2xl border ${statusBorder} ${statusBg} cursor-pointer transition-all duration-200 flex flex-col justify-between select-none hover:scale-[1.02] active:scale-95 group relative`}
+                      className={`p-3.5 rounded-2xl border ${statusBorder} ${statusBg} cursor-pointer transition-all duration-200 flex flex-col justify-between select-none hover:scale-[1.02] active:scale-95 group relative ${
+                        isKeyboardFocused ? 'scale-[1.02]' : ''
+                      }`}
                     >
                       <div>
                         {/* Queue Header Row */}
@@ -463,6 +539,12 @@ export const QueueModal: React.FC = () => {
                             <span className="font-mono font-black text-base text-slate-100">
                               {queue.queue_number}
                             </span>
+                            {isKeyboardFocused && (
+                              <span className="px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 text-[9px] font-black uppercase tracking-wider flex items-center gap-0.5 animate-pulse">
+                                <CornerDownLeft className="w-2.5 h-2.5" />
+                                <span>Enter</span>
+                              </span>
+                            )}
                           </div>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded border capitalize ${statusBadge}`}>
                             {isOccupied ? 'In Order' : 'Available'}
@@ -554,11 +636,12 @@ export const QueueModal: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {filteredDeliveryQueues.map((queue) => {
+                {filteredDeliveryQueues.map((queue, idx) => {
                   const sessionKey = `delivery-${queue.id}`;
                   const session = tableSessions[sessionKey];
                   const sessionItemCount = session?.cart ? session.cart.reduce((sum, item) => sum + item.quantity, 0) : 0;
                   const isCurrentSelected = orderType === 'delivery' && selectedDeliveryQueue === queue.id;
+                  const isKeyboardFocused = activeTab === 'delivery' && focusedQueueIndex === idx;
                   const isOccupied = sessionItemCount > 0 || queue.status === 'occupied';
 
                   const platformInfo = getPlatformBadge(queue.platform);
@@ -572,7 +655,10 @@ export const QueueModal: React.FC = () => {
                     statusBg = 'bg-emerald-950/20';
                   }
 
-                  if (isCurrentSelected) {
+                  if (isKeyboardFocused) {
+                    statusBorder = 'border-amber-400 ring-2 ring-amber-400 shadow-glow-amber';
+                    statusBg = 'bg-amber-950/30';
+                  } else if (isCurrentSelected) {
                     statusBorder = 'border-emerald-400 ring-2 ring-emerald-400 shadow-glow-emerald';
                   }
 
@@ -580,7 +666,9 @@ export const QueueModal: React.FC = () => {
                     <div
                       key={queue.id}
                       onClick={() => selectDeliveryQueue(queue.id)}
-                      className={`p-3.5 rounded-2xl border ${statusBorder} ${statusBg} cursor-pointer transition-all duration-200 flex flex-col justify-between select-none hover:scale-[1.01] active:scale-95 group relative`}
+                      className={`p-3.5 rounded-2xl border ${statusBorder} ${statusBg} cursor-pointer transition-all duration-200 flex flex-col justify-between select-none hover:scale-[1.01] active:scale-95 group relative ${
+                        isKeyboardFocused ? 'scale-[1.02]' : ''
+                      }`}
                     >
                       <div>
                         {/* Header: Platform & Queue Code */}
@@ -589,6 +677,12 @@ export const QueueModal: React.FC = () => {
                             <span className="font-mono font-black text-base text-slate-100">
                               {queue.queue_number}
                             </span>
+                            {isKeyboardFocused && (
+                              <span className="px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 text-[9px] font-black uppercase tracking-wider flex items-center gap-0.5 animate-pulse">
+                                <CornerDownLeft className="w-2.5 h-2.5" />
+                                <span>Enter</span>
+                              </span>
+                            )}
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${platformInfo.bg}`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${platformInfo.dot}`}></span>
                               <span>{queue.platform_label || platformInfo.label}</span>
@@ -696,16 +790,22 @@ export const QueueModal: React.FC = () => {
 
         {/* Modal Footer */}
         <div className="p-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
-          <div className="text-xs text-slate-400 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-            <span>Click any queue card to switch immediately to that customer's cart</span>
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-mono font-semibold">
+              <Keyboard className="w-3.5 h-3.5 text-amber-400" />
+              <span>[↑ ↓ ← → Navigate • Enter ↵ Select • Tab Switch Mode • Esc Close]</span>
+            </div>
+            <div className="text-xs text-slate-400 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+              <span>Click any queue card or press Enter to switch immediately</span>
+            </div>
           </div>
 
           <button
             onClick={closeQueueModal}
             className="px-6 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all"
           >
-            Close
+            Close (Esc)
           </button>
         </div>
 

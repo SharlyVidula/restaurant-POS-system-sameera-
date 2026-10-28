@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePosStore } from '../../store/posStore';
 import { 
   ShoppingBag, 
@@ -15,7 +15,8 @@ import {
   Sparkles,
   Layers,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Keyboard
 } from 'lucide-react';
 
 export const OrderCart: React.FC = () => {
@@ -51,7 +52,88 @@ export const OrderCart: React.FC = () => {
     selectedDeliveryQueue,
     deliveryQueues,
     printBillPreview,
+    variantModalItem,
+    isPaymentModalOpen,
+    isTableModalOpen,
+    isQueueModalOpen,
+    printPreview,
+    isHistoryModalOpen,
+    isMenuPriceModalOpen,
+    isHotkeysModalOpen,
+    isAdminAuthModalOpen,
+    isOpeningFloatModalOpen,
   } = usePosStore();
+
+    const isAnyModalOpen = !!(
+    variantModalItem ||
+    isPaymentModalOpen ||
+    isTableModalOpen ||
+    isQueueModalOpen ||
+    printPreview ||
+    isHistoryModalOpen ||
+    isMenuPriceModalOpen ||
+    isHotkeysModalOpen ||
+    isAdminAuthModalOpen ||
+    isOpeningFloatModalOpen
+  );
+
+  const [focusedCartIndex, setFocusedCartIndex] = useState<number>(0);
+
+  // Keep index within bounds
+  useEffect(() => {
+    if (focusedCartIndex >= cart.length) {
+      setFocusedCartIndex(Math.max(0, cart.length - 1));
+    }
+  }, [cart.length, focusedCartIndex]);
+
+  // Keyboard controls for Cart:
+  // Up/Down: choose cart item
+  // Left/Right: change quantity (-1 / +1)
+  // Delete: remove active item
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isAnyModalOpen) return;
+      if (cart.length === 0) return;
+
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedCartIndex(prev => (prev < cart.length - 1 ? prev + 1 : 0));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedCartIndex(prev => (prev > 0 ? prev - 1 : cart.length - 1));
+      } else if (e.key === 'ArrowRight' || e.key === '+') {
+        e.preventDefault();
+        const activeItem = cart[focusedCartIndex];
+        if (activeItem) {
+          updateCartQuantity(activeItem.cart_item_id, 1);
+        }
+      } else if (e.key === 'ArrowLeft' || e.key === '-') {
+        e.preventDefault();
+        const activeItem = cart[focusedCartIndex];
+        if (activeItem) {
+          updateCartQuantity(activeItem.cart_item_id, -1);
+        }
+      } else if (e.key === 'Delete') {
+        e.preventDefault();
+        const activeItem = cart[focusedCartIndex];
+        if (activeItem) {
+          removeCartItem(activeItem.cart_item_id);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAnyModalOpen, cart, focusedCartIndex, updateCartQuantity, removeCartItem]);
 
   const currentDeliveryQueueObj = deliveryQueues.find(q => q.id === selectedDeliveryQueue);
 
@@ -82,6 +164,11 @@ export const OrderCart: React.FC = () => {
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-amber-400 font-mono font-bold">
                 {cart.reduce((sum, item) => sum + item.quantity, 0)} items
               </span>
+              {cart.length > 0 && (
+                <span className="hidden sm:inline-flex text-[9px] font-mono text-amber-400/90 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                  [↑ ↓ Item • ← → Qty]
+                </span>
+              )}
             </div>
             <p className="text-[11px] text-slate-400 font-medium">
               {orderType === 'dine_in' ? (
@@ -158,17 +245,31 @@ export const OrderCart: React.FC = () => {
             </div>
           )
         ) : (
-          cart.map((item) => (
+          cart.map((item, idx) => {
+            const isFocused = idx === focusedCartIndex;
+            return (
             <div
               key={item.cart_item_id}
-              className="bg-slate-950/70 border border-slate-800/80 hover:border-slate-700 rounded-xl p-2.5 transition-all"
+              onClick={() => setFocusedCartIndex(idx)}
+              className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
+                isFocused 
+                  ? 'border-amber-400 ring-2 ring-amber-400 shadow-glow-amber bg-amber-950/25' 
+                  : 'bg-slate-950/70 border-slate-800/80 hover:border-slate-700'
+              }`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-xs text-slate-100">
-                      {item.item_name}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-bold text-xs text-slate-100">
+                        {item.item_name}
+                      </span>
+                      {isFocused && (
+                        <span className="text-[9px] font-mono font-bold px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+                          [← -1 | +1 →]
+                        </span>
+                      )}
+                    </div>
                     {item.variant_name && (
                       <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 font-semibold">
                         {item.variant_name}
@@ -238,7 +339,8 @@ export const OrderCart: React.FC = () => {
                 </div>
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
 

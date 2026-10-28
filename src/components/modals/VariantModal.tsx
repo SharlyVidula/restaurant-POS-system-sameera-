@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { usePosStore } from '../../store/posStore';
 import { CartItemModifier } from '../../types';
-import { X, Plus, Minus, Check, Sparkles, ChefHat, Layers } from 'lucide-react';
+import { 
+  X, 
+  Plus, 
+  Minus, 
+  Check, 
+  Sparkles, 
+  ChefHat, 
+  Layers,
+  Keyboard,
+  CornerDownLeft
+} from 'lucide-react';
 
 export const VariantModal: React.FC = () => {
   const { variantModalItem, closeVariantModal, addBatchToCart } = usePosStore();
@@ -127,35 +137,87 @@ export const VariantModal: React.FC = () => {
     }
   };
 
-  // Keyboard shortcut listener for Variant Modal (Enter to confirm, Esc to close, 1/2 for portions)
+  // Focused index for keyboard portion navigation
+  const [focusedVariantIndex, setFocusedVariantIndex] = useState<number>(0);
+
+  // Keyboard shortcut listener for Variant Modal:
+  // Up/Down: choose portion size
+  // Left/Right: change quantity (-1 / +1)
+  // Number 0-9: set exact quantity
+  // Enter: confirm & add to order
+  // Esc: close modal
   useEffect(() => {
     const handleModalKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+      // If typing in text input (e.g. custom kitchen instruction), don't steal arrow keys
+      if (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text') return;
+      if (target.tagName === 'TEXTAREA') return;
 
-      if (e.key === 'Enter') {
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (hasVariants && variantModalItem?.variants && variantModalItem.variants.length > 0) {
+          setFocusedVariantIndex(prev => (prev > 0 ? prev - 1 : variantModalItem.variants!.length - 1));
+        }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (hasVariants && variantModalItem?.variants && variantModalItem.variants.length > 0) {
+          setFocusedVariantIndex(prev => (prev < variantModalItem.variants!.length - 1 ? prev + 1 : 0));
+        }
+      } else if (e.key === 'ArrowRight' || e.key === '+') {
+        e.preventDefault();
+        if (hasVariants && variantModalItem?.variants && variantModalItem.variants.length > 0) {
+          const currentVariant = variantModalItem.variants[focusedVariantIndex];
+          if (currentVariant) {
+            updateVariantQty(currentVariant.id, 1);
+          }
+        } else {
+          setNonVariantQuantity(q => q + 1);
+        }
+      } else if (e.key === 'ArrowLeft' || e.key === '-') {
+        e.preventDefault();
+        if (hasVariants && variantModalItem?.variants && variantModalItem.variants.length > 0) {
+          const currentVariant = variantModalItem.variants[focusedVariantIndex];
+          if (currentVariant) {
+            updateVariantQty(currentVariant.id, -1);
+          }
+        } else {
+          setNonVariantQuantity(q => Math.max(1, q - 1));
+        }
+      } else if (/^[0-9]$/.test(e.key)) {
+        // Direct number key (0-9) sets the quantity for the focused portion
+        const num = parseInt(e.key, 10);
+        if (hasVariants && variantModalItem?.variants && variantModalItem.variants.length > 0) {
+          const currentVariant = variantModalItem.variants[focusedVariantIndex];
+          if (currentVariant) {
+            setVariantExactQty(currentVariant.id, num);
+          }
+        } else {
+          if (num > 0) setNonVariantQuantity(num);
+        }
+      } else if (e.key === 'Enter') {
         e.preventDefault();
         handleConfirm();
       } else if (e.key === 'Escape') {
         e.preventDefault();
         closeVariantModal();
-      } else if (hasVariants && variantModalItem?.variants) {
-        // '1' selects 1st variant (Half), '2' selects 2nd variant (Full)
-        if (e.key === '1' && variantModalItem.variants[0]) {
-          e.preventDefault();
-          const v0 = variantModalItem.variants[0];
-          setVariantQuantities({ [v0.id]: 1 });
-        } else if (e.key === '2' && variantModalItem.variants[1]) {
-          e.preventDefault();
-          const v1 = variantModalItem.variants[1];
-          setVariantQuantities({ [v1.id]: 1 });
-        }
       }
     };
 
     window.addEventListener('keydown', handleModalKey);
     return () => window.removeEventListener('keydown', handleModalKey);
-  }, [totalItemsCount, variantQuantities, nonVariantQuantity, extraAddons, selectedPresetNotes, customNote, sugarLevel, withIce]);
+  }, [
+    hasVariants, 
+    variantModalItem, 
+    focusedVariantIndex, 
+    totalItemsCount, 
+    variantQuantities, 
+    nonVariantQuantity, 
+    extraAddons, 
+    selectedPresetNotes, 
+    customNote, 
+    sugarLevel, 
+    withIce
+  ]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 select-none animate-fadeIn overflow-y-auto">
@@ -188,6 +250,25 @@ export const VariantModal: React.FC = () => {
           </button>
         </div>
 
+        {/* Keyboard Quick Navigation Guide Banner */}
+        <div className="px-4 py-2 bg-amber-950/30 border-b border-amber-500/30 flex items-center justify-between text-xs font-mono font-bold text-amber-300 shrink-0">
+          <div className="flex items-center gap-1.5 text-slate-300">
+            <Keyboard className="w-3.5 h-3.5 text-amber-400" />
+            <span className="text-[11px] uppercase tracking-wider font-extrabold text-amber-400">Keyboard Controls</span>
+          </div>
+          <div className="flex items-center gap-2 text-[10px]">
+            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-200">
+              <strong className="text-amber-400 font-extrabold">↑ ↓</strong> Portion
+            </span>
+            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-200">
+              <strong className="text-amber-400 font-extrabold">← →</strong> Quantity
+            </span>
+            <span className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-black">
+              Enter ↵ Confirm
+            </span>
+          </div>
+        </div>
+
         {/* Modal Body */}
         <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1 scrollbar-thin scrollbar-thumb-slate-800">
           
@@ -205,7 +286,8 @@ export const VariantModal: React.FC = () => {
               </div>
 
               <div className="space-y-2.5">
-                {variantModalItem.variants.map((v) => {
+                {variantModalItem.variants.map((v, index) => {
+                  const isFocused = index === focusedVariantIndex;
                   const qty = variantQuantities[v.id] || 0;
                   const isSelected = qty > 0;
                   const itemUnitPrice = variantModalItem.base_price + v.price_adjustment + addonsTotal;
@@ -214,28 +296,38 @@ export const VariantModal: React.FC = () => {
                   return (
                     <div
                       key={v.id}
-                      className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                        isSelected
-                          ? 'bg-amber-500/10 border-amber-500/80 shadow-md ring-1 ring-amber-500/30'
+                      onClick={() => setFocusedVariantIndex(index)}
+                      className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                        isFocused
+                          ? 'bg-amber-500/15 border-amber-400 ring-2 ring-amber-400/90 shadow-glow-amber'
+                          : isSelected
+                          ? 'bg-amber-500/10 border-amber-500/60 shadow-md ring-1 ring-amber-500/20'
                           : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-400'
                       }`}
                     >
                       {/* Portion Info */}
                       <div 
-                        className="flex-1 cursor-pointer select-none"
+                        className="flex-1 select-none"
                         onClick={() => {
+                          setFocusedVariantIndex(index);
                           if (qty === 0) updateVariantQty(v.id, 1);
                         }}
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
                             isSelected ? 'border-amber-400 bg-amber-500' : 'border-slate-600'
                           }`}>
                             {isSelected && <Check className="w-2.5 h-2.5 text-slate-950 stroke-[3]" />}
                           </div>
-                          <span className={`text-sm font-bold ${isSelected ? 'text-slate-100' : 'text-slate-300'}`}>
+                          <span className={`text-sm font-bold ${isFocused ? 'text-amber-300' : isSelected ? 'text-slate-100' : 'text-slate-300'}`}>
                             {v.variant_name}
                           </span>
+                          {isFocused && (
+                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-500 text-slate-950 font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                              <span>Active</span>
+                              <span className="text-[9px] font-extrabold">← →</span>
+                            </span>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2 mt-0.5 ml-6 text-xs">
@@ -254,7 +346,11 @@ export const VariantModal: React.FC = () => {
                       <div className="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-700/80 shrink-0 shadow-inner">
                         <button
                           type="button"
-                          onClick={() => updateVariantQty(v.id, -1)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFocusedVariantIndex(index);
+                            updateVariantQty(v.id, -1);
+                          }}
                           disabled={qty <= 0}
                           className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 disabled:opacity-30 disabled:hover:bg-slate-800 text-slate-200 flex items-center justify-center font-bold transition-all cursor-pointer"
                         >
@@ -265,15 +361,20 @@ export const VariantModal: React.FC = () => {
                           type="number"
                           min="0"
                           value={qty}
+                          onFocus={() => setFocusedVariantIndex(index)}
                           onChange={(e) => setVariantExactQty(v.id, parseInt(e.target.value, 10) || 0)}
                           className={`w-9 text-center font-mono font-bold text-sm bg-transparent focus:outline-none ${
-                            isSelected ? 'text-amber-300' : 'text-slate-500'
+                            isFocused ? 'text-amber-400 font-black' : isSelected ? 'text-amber-300' : 'text-slate-500'
                           }`}
                         />
 
                         <button
                           type="button"
-                          onClick={() => updateVariantQty(v.id, 1)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFocusedVariantIndex(index);
+                            updateVariantQty(v.id, 1);
+                          }}
                           className="w-8 h-8 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 active:scale-95 flex items-center justify-center font-bold transition-all cursor-pointer"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -504,12 +605,18 @@ export const VariantModal: React.FC = () => {
             disabled={totalItemsCount <= 0}
             className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:to-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black text-sm shadow-glow-amber flex items-center justify-between transition-all active:scale-98"
           >
-            <span>
-              {totalItemsCount <= 0 
-                ? 'Select at least 1 portion' 
-                : hasVariants 
-                ? `Add ${totalItemsCount} ${totalItemsCount === 1 ? 'Portion' : 'Portions'} to Order` 
-                : `Add to Order (${totalItemsCount})`}
+            <span className="flex items-center gap-2">
+              <span>
+                {totalItemsCount <= 0 
+                  ? 'Select at least 1 portion' 
+                  : hasVariants 
+                  ? `Add ${totalItemsCount} ${totalItemsCount === 1 ? 'Portion' : 'Portions'} to Order` 
+                  : `Add to Order (${totalItemsCount})`}
+              </span>
+              <kbd className="px-1.5 py-0.5 rounded bg-slate-950/80 text-amber-300 font-mono text-[10px] font-bold border border-amber-400/30 flex items-center gap-1 shadow-sm">
+                <span>Enter</span>
+                <CornerDownLeft className="w-2.5 h-2.5 stroke-[3]" />
+              </kbd>
             </span>
             <span className="font-mono text-base font-extrabold">
               Rs. {totalPrice.toLocaleString('en-LK', { minimumFractionDigits: 2 })}

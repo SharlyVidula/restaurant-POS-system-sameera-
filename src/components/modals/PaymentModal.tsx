@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePosStore } from '../../store/posStore';
 import { PaymentMethod } from '../../types';
 import { 
@@ -11,7 +11,8 @@ import {
   KeyRound,
   ArrowRight,
   Sparkles,
-  Receipt
+  Receipt,
+  Keyboard
 } from 'lucide-react';
 
 export const PaymentModal: React.FC = () => {
@@ -54,6 +55,61 @@ export const PaymentModal: React.FC = () => {
 
   const change = Math.max(0, cashTendered - netTotal);
   const isCashSufficient = cashTendered >= netTotal;
+  // Keyboard navigation for PaymentModal
+  useEffect(() => {
+    if (!isPaymentModalOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isTextInput = target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text';
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closePaymentModal();
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (!isProcessing && !(activeMethod === 'cash' && !isCashSufficient)) {
+          handleComplete();
+        }
+        return;
+      }
+
+      // If user is typing in a text field, do not hijack arrows
+      if (isTextInput) return;
+
+      const methods: PaymentMethod[] = ['cash', 'card', 'qr'];
+      const currentIndex = methods.indexOf(activeMethod);
+
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        const nextMethod = methods[(currentIndex + 1) % methods.length];
+        setActiveMethod(nextMethod);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const prevMethod = methods[(currentIndex - 1 + methods.length) % methods.length];
+        setActiveMethod(prevMethod);
+      } else if (e.key === 'ArrowUp' && activeMethod === 'cash') {
+        e.preventDefault();
+        setCashTendered(prev => prev + 500);
+      } else if (e.key === 'ArrowDown' && activeMethod === 'cash') {
+        e.preventDefault();
+        setCashTendered(prev => Math.max(netTotal, prev - 500));
+      } else if (e.key === '1') {
+        setActiveMethod('cash');
+      } else if (e.key === '2') {
+        setActiveMethod('card');
+      } else if (e.key === '3') {
+        setActiveMethod('qr');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPaymentModalOpen, activeMethod, isProcessing, isCashSufficient, netTotal, cashTendered, cardRef, cardProvider, qrRef]);
+
 
   const handleComplete = async () => {
     setIsProcessing(true);
@@ -300,12 +356,18 @@ export const PaymentModal: React.FC = () => {
 
         {/* Footer: Confirm Settlement */}
         <div className="p-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between gap-3">
-          <button
-            onClick={closePaymentModal}
-            className="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all"
-          >
-            Cancel
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={closePaymentModal}
+              className="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all"
+            >
+              Cancel (Esc)
+            </button>
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[11px] font-mono font-semibold">
+              <Keyboard className="w-3.5 h-3.5 text-amber-400" />
+              <span>[← → Method • ↑ ↓ Cash ±500 • Enter ↵]</span>
+            </div>
+          </div>
 
           <button
             onClick={handleComplete}
@@ -313,7 +375,7 @@ export const PaymentModal: React.FC = () => {
             className="flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black text-sm shadow-glow-emerald flex items-center justify-center gap-2 transition-all active:scale-98"
           >
             <Printer className="w-4 h-4" />
-            <span>Complete & Print Thermal Receipt</span>
+            <span>Complete & Print Thermal Receipt</span> <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900/40 text-emerald-950 font-bold ml-1 border border-emerald-700/40">Enter ↵</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

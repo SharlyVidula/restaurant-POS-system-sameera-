@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePosStore } from '../../store/posStore';
 import { DiningTable } from '../../types';
 import { 
@@ -7,9 +7,11 @@ import {
   Clock, 
   Receipt, 
   Check, 
-  Sparkles,
-  UtensilsCrossed,
-  ArrowRight
+  Sparkles, 
+  UtensilsCrossed, 
+  ArrowRight,
+  Keyboard,
+  CornerDownLeft
 } from 'lucide-react';
 
 export const TableSelectionDashboard: React.FC = () => {
@@ -21,6 +23,7 @@ export const TableSelectionDashboard: React.FC = () => {
   } = usePosStore();
 
   const [selectedZone, setSelectedZone] = useState<string>('all');
+  const [focusedTableIndex, setFocusedTableIndex] = useState<number>(0);
 
   const zones = ['Galle Fort Courtyard', 'Main Dining Hall', 'AC Lounge'] as const;
 
@@ -42,6 +45,59 @@ export const TableSelectionDashboard: React.FC = () => {
   const filteredZones = selectedZone === 'all' 
     ? zones 
     : zones.filter(z => z === selectedZone);
+
+  // Flattened visible tables in the currently displayed zones
+  const visibleTables = tables.filter(t => selectedZone === 'all' || t.zone === selectedZone);
+
+  // Keyboard navigation for tables: Arrow keys to move, Enter to select
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      if (visibleTables.length === 0) return;
+
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setFocusedTableIndex(prev => (prev < visibleTables.length - 1 ? prev + 1 : 0));
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setFocusedTableIndex(prev => (prev > 0 ? prev - 1 : visibleTables.length - 1));
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedTableIndex(prev => {
+          const next = prev + 4;
+          return next < visibleTables.length ? next : prev;
+        });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedTableIndex(prev => {
+          const next = prev - 4;
+          return next >= 0 ? next : prev;
+        });
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const activeTable = visibleTables[focusedTableIndex];
+        if (activeTable) {
+          selectTable(activeTable);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [visibleTables, focusedTableIndex, selectTable]);
+
+  // Keep index within bounds when zone changes
+  useEffect(() => {
+    if (focusedTableIndex >= visibleTables.length) {
+      setFocusedTableIndex(Math.max(0, visibleTables.length - 1));
+    }
+  }, [visibleTables.length, focusedTableIndex]);
+
+  const activeFocusedTableId = visibleTables[focusedTableIndex]?.id;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-[#0e1424] select-none animate-fadeIn">
@@ -66,22 +122,29 @@ export const TableSelectionDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Status Indicators & Legend */}
-        <div className="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 text-xs font-semibold">
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded text-emerald-400 bg-emerald-950/40 border border-emerald-500/20">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>{vacantCount} Available</span>
+        {/* Keyboard Navigation Badge & Status Indicators */}
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-mono font-semibold shadow-sm">
+            <Keyboard className="w-3.5 h-3.5 text-amber-400" />
+            <span>[↑ ↓ ← → Navigate • Enter ↵ Select Table]</span>
           </div>
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded text-amber-400 bg-amber-950/40 border border-amber-500/20">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-            <span>{occupiedCount} Occupied</span>
-          </div>
-          {billedCount > 0 && (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded text-blue-400 bg-blue-950/40 border border-blue-500/20">
-              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-              <span>{billedCount} Billed</span>
+
+          <div className="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 text-xs font-semibold">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded text-emerald-400 bg-emerald-950/40 border border-emerald-500/20">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>{vacantCount} Available</span>
             </div>
-          )}
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded text-amber-400 bg-amber-950/40 border border-amber-500/20">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+              <span>{occupiedCount} Occupied</span>
+            </div>
+            {billedCount > 0 && (
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded text-blue-400 bg-blue-950/40 border border-blue-500/20">
+                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                <span>{billedCount} Billed</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -119,7 +182,7 @@ export const TableSelectionDashboard: React.FC = () => {
 
         <div className="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
           <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          <span>Click any table to open menu</span>
+          <span>Click any table or use keyboard arrows to select</span>
         </div>
       </div>
 
@@ -147,6 +210,7 @@ export const TableSelectionDashboard: React.FC = () => {
                     : 0;
 
                   const isSelected = selectedTable?.id === table.id;
+                  const isKeyboardFocused = activeFocusedTableId === table.id;
                   const isOccupied = table.status === 'occupied' || sessionItemCount > 0;
                   const isBilled = table.status === 'billed';
 
@@ -164,22 +228,36 @@ export const TableSelectionDashboard: React.FC = () => {
                     statusBadge = 'bg-blue-500/20 text-blue-300 border-blue-500/40';
                   }
 
-                  if (isSelected) {
+                  if (isKeyboardFocused) {
                     statusBorder = 'border-amber-400 ring-2 ring-amber-400 shadow-glow-amber';
+                    statusBg = 'bg-amber-950/30';
+                  } else if (isSelected) {
+                    statusBorder = 'border-emerald-400 ring-2 ring-emerald-400 shadow-glow-emerald';
                   }
 
                   return (
                     <div
                       key={table.id}
                       onClick={() => selectTable(table)}
-                      className={`p-4 rounded-2xl border ${statusBorder} ${statusBg} cursor-pointer transition-all duration-200 flex flex-col justify-between select-none hover:scale-[1.02] active:scale-95 shadow-lg group`}
+                      className={`p-4 rounded-2xl border ${statusBorder} ${statusBg} cursor-pointer transition-all duration-200 flex flex-col justify-between select-none hover:scale-[1.02] active:scale-95 shadow-lg group relative ${
+                        isKeyboardFocused ? 'scale-[1.02]' : ''
+                      }`}
                     >
                       <div>
                         {/* Table Number & Status Row */}
                         <div className="flex items-center justify-between mb-2">
-                          <span className="font-mono font-black text-xl text-slate-100 group-hover:text-amber-400 transition-colors">
-                            {table.table_number}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-black text-xl text-slate-100 group-hover:text-amber-400 transition-colors">
+                              {table.table_number}
+                            </span>
+                            {isKeyboardFocused && (
+                              <span className="px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 text-[9px] font-black uppercase tracking-wider flex items-center gap-0.5 animate-pulse">
+                                <CornerDownLeft className="w-2.5 h-2.5" />
+                                <span>Enter</span>
+                              </span>
+                            )}
+                          </div>
+
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded border capitalize ${statusBadge}`}>
                             {isOccupied ? 'Occupied' : isBilled ? 'Billed' : 'Available'}
                           </span>
@@ -231,7 +309,7 @@ export const TableSelectionDashboard: React.FC = () => {
                         )}
 
                         {isSelected && (
-                          <div className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center shadow-md">
+                          <div className="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center shadow-md">
                             <Check className="w-3 h-3 stroke-[3]" />
                           </div>
                         )}
