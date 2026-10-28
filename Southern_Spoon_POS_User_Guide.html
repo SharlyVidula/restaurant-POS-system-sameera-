@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Southern Spoon POS - Cashier & Keyboard Navigation Guide</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+    @page {
+      size: A4;
+      margin: 14mm 14mm 14mm 14mm;
+      @bottom-right {
+        content: counter(page);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1e293b;
+      background: #ffffff;
+      line-height: 1.5;
+      font-size: 11pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .header-banner {
+      background: linear-gradient(135deg, #090d16 0%, #172033 100%);
+      color: #ffffff;
+      padding: 24px 28px;
+      border-radius: 14px;
+      margin-bottom: 22px;
+      border-left: 6px solid #f59e0b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-banner h1 {
+      font-size: 20pt;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+    }
+
+    .header-banner h1 span {
+      color: #fbbf24;
+    }
+
+    .header-banner p {
+      font-size: 10pt;
+      color: #94a3b8;
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    .badge-doc {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 9pt;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    h2 {
+      font-size: 13pt;
+      font-weight: 800;
+      color: #0f172a;
+      margin-top: 20px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 6px;
+    }
+
+    h2 .num-circle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: #f59e0b;
+      color: #0f172a;
+      border-radius: 50%;
+      font-size: 9pt;
+      font-weight: 900;
+    }
+
+    p {
+      margin-bottom: 10px;
+      font-size: 10pt;
+      color: #334155;
+    }
+
+    .section {
+      margin-bottom: 20px;
+      page-break-inside: avoid;
+    }
+
+    /* Keycap badge */
+    kbd {
+      display: inline-block;
+      padding: 2.5px 7px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9pt;
+      font-weight: 700;
+      color: #0f172a;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-bottom: 2px solid #94a3b8;
+      border-radius: 6px;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+      margin: 0 2px;
+      vertical-align: baseline;
+    }
+
+    .kbd-amber {
+      background: #fef3c7;
+      border-color: #fcd34d;
+      border-bottom-color: #f59e0b;
+      color: #92400e;
+    }
+
+    .kbd-emerald {
+      background: #d1fae5;
+      border-color: #6ee7b7;
+      border-bottom-color: #10b981;
+      color: #065f46;
+    }
+
+    /* Feature grid */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+      margin-bottom: 12px;
+    }
+
+    .card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .card-title {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card p, .card ul {
+      font-size: 9pt;
+      color: #475569;
+      margin-bottom: 0;
+    }
+
+    ul.shortcut-list {
+      list-style: none;
+      padding: 0;
+      margin: 6px 0;
+    }
+
+    ul.shortcut-list li {
+      font-size: 9.5pt;
+      padding: 4px 0;
+      border-bottom: 1px dashed #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    ul.shortcut-list li:last-child {
+      border-bottom: none;
+    }
+
+    /* Quick Ref Table */
+    table.ref-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      margin-bottom: 12px;
+      font-size: 9pt;
+    }
+
+    table.ref-table th {
+      background: #0f172a;
+      color: #f8fafc;
+      text-align: left;
+      padding: 8px 10px;
+      font-weight: 700;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    table.ref-table th:first-child {
+      border-top-left-radius: 8px;
+    }
+    table.ref-table th:last-child {
+      border-top-right-radius: 8px;
+    }
+
+    table.ref-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      color: #334155;
+    }
+
+    table.ref-table tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+
+    table.ref-table tr:hover td {
+      background: #f1f5f9;
+    }
+
+    .callout {
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin: 12px 0;
+    }
+
+    .callout-title {
+      font-weight: 800;
+      font-size: 9.5pt;
+      color: #b45309;
+      margin-bottom: 2px;
+    }
+
+    .callout p {
+      margin: 0;
+      font-size: 9pt;
+      color: #78350f;
+    }
+
+    .callout-emerald {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      border-left-color: #10b981;
+    }
+    .callout-emerald .callout-title {
+      color: #047857;
+    }
+    .callout-emerald p {
+      color: #064e3b;
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 8pt;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .status-green { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .status-amber { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .status-blue { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+
+    .footer {
+      margin-top: 24px;
+      border-top: 1px solid #cbd5e1;
+      padding-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 8pt;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Banner -->
+  <div class="header-banner">
+    <div>
+      <h1>SOUTHERN SPOON <span>POS</span></h1>
+      <p>Cashier Operator Manual • Keyboard Navigation & Multi-Channel Workflows</p>
+    </div>
+    <div class="badge-doc">
+      v2.4 Keyboard Edition
+    </div>
+  </div>
+
+  <!-- Executive Summary -->
+  <div class="section">
+    <p style="font-size: 10pt; line-height: 1.6;">
+      This manual outlines the newly implemented <strong>keyboard-driven cashier controls</strong>, 
+      <strong>mandatory table floor selection</strong>, <strong>Takeaway & Delivery order queues</strong>, and 
+      <strong>custom hotkey punch-in workflows</strong>. By leveraging keyboard navigation, cashiers can process orders 
+      with speed, accuracy, and zero reliance on a mouse during peak hours.
+    </p>
+
+    <div class="callout callout-emerald">
+      <div class="callout-title">Core Benefit: 100% Mouse-Free Cashier Speed</div>
+      <p>
+        Cashiers can switch tables, select takeaway queues, punch numeric item hotkeys, pick Half/Full portions with arrow keys, 
+        adjust quantities, and settle bills via keyboard shortcuts in under 5 seconds per customer transaction.
+      </p>
+    </div>
+  </div>
+
+  <!-- Section 1: Portion & Quantity Arrow Controls -->
+  <div class="section">
+    <h2><span class="num-circle">1</span> Portion Selection & Quantity Controls (<kbd>VariantModal</kbd>)</h2>
+    <p>
+      When an item with multiple portions (such as Rice, Kottu, or Curries) is selected or punched by hotkey, 
+      the portion selector opens automatically.
+    </p>
+
+    <div class="card" style="margin-bottom: 10px;">
+      <ul class="shortcut-list">
+        <li>
+          <span><strong>Move between Portion Sizes</strong> (e.g. Half Portion vs. Full Portion)</span>
+          <span><kbd class="kbd-amber">↑ Up</kbd> <kbd class="kbd-amber">↓ Down</kbd></span>
+        </li>
+        <li>
+          <span><strong>Adjust Portion Quantity</strong> (Add or subtract portions)</span>
+          <span><kbd class="kbd-amber">← Left (-1)</kbd> <kbd class="kbd-amber">→ Right (+1)</kbd> or <kbd>-</kbd> / <kbd>+</kbd></span>
+        </li>
+        <li>
+          <span><strong>Direct Numeric Quantity Punch</strong> (Instantly sets quantity)</span>
+          <span><kbd>0</kbd> – <kbd>9</kbd></span>
+        </li>
+        <li>
+          <span><strong>Confirm Portions & Add to Order</strong></span>
+          <span><kbd class="kbd-emerald">Enter ↵</kbd></span>
+        </li>
+        <li>
+          <span><strong>Dismiss / Cancel Modal</strong></span>
+          <span><kbd>Esc</kbd></span>
+        </li>
+      </ul>
+    </div>
+    <p style="font-size: 8.5pt; color: #64748b; font-style: italic;">
+      * Note: If typing into the custom kitchen instruction box, arrow keys remain inside the text cursor to prevent interference.
+    </p>
+  </div>
+
+  <!-- Section 2: Dining Floor Table Navigation -->
+  <div class="section">
+    <h2><span class="num-circle">2</span> Dining Floor & Table Selection (<kbd>Dine-In Mode</kbd>)</h2>
+    <p>
+      For Dine-In orders, cashier table selection is mandatory. The dining floor layout opens automatically whenever 
+      the Dine-In tab is selected without an assigned table.
+    </p>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Keyboard Navigation</div>
+        <ul class="shortcut-list">
+          <li>
+            <span>Move across tables</span>
+            <span><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></span>
+          </li>
+          <li>
+            <span>Select focused table</span>
+            <span><kbd class="kbd-emerald">Enter ↵</kbd></span>
+          </li>
+          <li>
+            <span>Switch table later</span>
+            <span>Click <em>Change Table</em> at top</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Live Floor Status Indicators</div>
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px;">
+          <div><span class="status-pill status-green">Available</span> Ready for new guest seating</div>
+          <div><span class="status-pill status-amber">Occupied</span> Active dining session with live bill</div>
+          <div><span class="status-pill status-blue">Billed</span> Guest bill printed, ready for payment</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- Section 3: Takeaway & Delivery Order Queues -->
+  <div class="section">
+    <h2><span class="num-circle">3</span> Multi-Channel Queues (<kbd>Takeaway & Delivery</kbd>)</h2>
+    <p>
+      Takeaway walk-ins and delivery dispatch orders run on separate multi-cart queue slots (e.g. <kbd>TK-01</kbd> to <kbd>TK-12</kbd> 
+      and <kbd>DL-01</kbd> to <kbd>DL-12</kbd> for Uber Eats, PickMe, and Direct Delivery). Each queue slot saves its own shopping cart independently!
+    </p>
+
+    <div class="card" style="margin-bottom: 10px;">
+      <ul class="shortcut-list">
+        <li>
+          <span><strong>Open Queue Dashboard</strong></span>
+          <span>Click Queue in header or top-right cart banner</span>
+        </li>
+        <li>
+          <span><strong>Toggle Takeaway ⇄ Delivery Channels</strong></span>
+          <span><kbd class="kbd-amber">Tab</kbd></span>
+        </li>
+        <li>
+          <span><strong>Navigate between Queue Slots</strong></span>
+          <span><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></span>
+        </li>
+        <li>
+          <span><strong>Select & Open Active Queue Cart</strong></span>
+          <span><kbd class="kbd-emerald">Enter ↵</kbd></span>
+        </li>
+        <li>
+          <span><strong>Exit Queue Modal</strong></span>
+          <span><kbd>Esc</kbd></span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">Sri Lankan Delivery Platforms Supported</div>
+      <p>
+        Delivery queues display dedicated badges for <strong>Uber Eats</strong> (Green), <strong>PickMe Food</strong> (Amber), 
+        <strong>Direct Phone Order</strong> (Blue), and <strong>In-House Rider</strong> (Purple) with customer name and rider tracking.
+      </p>
+    </div>
+  </div>
+
+  <!-- Section 4: Live Order Cart Navigation -->
+  <div class="section">
+    <h2><span class="num-circle">4</span> Live Order Cart Keyboard Controls (<kbd>OrderCart</kbd>)</h2>
+    <p>
+      On the main POS ordering screen, cashiers can adjust line items in the active order cart without touching the mouse.
+    </p>
+
+    <div class="card">
+      <ul class="shortcut-list">
+        <li>
+          <span><strong>Select / Move across Cart Items</strong></span>
+          <span><kbd class="kbd-amber">↑ Up</kbd> <kbd class="kbd-amber">↓ Down</kbd></span>
+        </li>
+        <li>
+          <span><strong>Increase / Decrease Item Quantity</strong></span>
+          <span><kbd class="kbd-amber">← (-1)</kbd> <kbd class="kbd-amber">→ (+1)</kbd> or <kbd>-</kbd> / <kbd>+</kbd></span>
+        </li>
+        <li>
+          <span><strong>Remove Item from Bill</strong></span>
+          <span><kbd>Delete</kbd></span>
+        </li>
+        <li>
+          <span><strong>Settle / Open Payment Modal</strong></span>
+          <span>Click <kbd class="kbd-emerald">Settle / Pay</kbd> button</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Section 5: Numeric Hotkeys & Admin Manager -->
+  <div class="section">
+    <h2><span class="num-circle">5</span> Rapid Numeric Hotkeys & Admin Hotkey Manager</h2>
+    <p>
+      Cashiers can type any menu item's assigned number directly on the keyboard to add it instantly to the current bill.
+    </p>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">How Cashiers Punch Hotkeys</div>
+        <p style="font-size: 9pt; margin-bottom: 6px;">
+          Type the item code on the number row or numpad. An on-screen HUD appears showing the live matching menu dish:
+        </p>
+        <p style="font-size: 9.5pt; font-family: 'JetBrains Mono', monospace; font-weight: bold; color: #0284c7;">
+          Example: Type [ 1 ] [ 0 ] [ 1 ] → Enter ↵
+        </p>
+        <p style="font-size: 8.5pt; color: #64748b; margin-top: 4px;">
+          If the item has portions, the portion modal opens automatically for instant <kbd>↑</kbd>/<kbd>↓</kbd> choice.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Admin Hotkey Manager</div>
+        <p style="font-size: 9pt; margin-bottom: 6px;">
+          To customize or reassign hotkey numbers:
+        </p>
+        <ol style="font-size: 8.5pt; padding-left: 16px; color: #475569; line-height: 1.5;">
+          <li>Click the <strong>⚡ Hotkeys</strong> button on the top POS header.</li>
+          <li>Enter Manager PIN: <kbd>1234</kbd>.</li>
+          <li>Assign 1, 2, or 3-digit codes next to high-volume items (e.g., Short Eats, Kothu, Rice).</li>
+          <li>Click <strong>Save & Apply Hotkeys</strong>.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 6: Payment & Settlement Modal -->
+  <div class="section">
+    <h2><span class="num-circle">6</span> Settlement & Payment Modal Shortcuts (<kbd>PaymentModal</kbd>)</h2>
+    <p>
+      When the bill is ready for payment, the settlement modal supports keyboard-based method switching and cash tenders.
+    </p>
+
+    <div class="card">
+      <ul class="shortcut-list">
+        <li>
+          <span><strong>Cycle Payment Method (Cash ⇄ Card Terminal ⇄ LankaQR)</strong></span>
+          <span><kbd class="kbd-amber">← Left</kbd> <kbd class="kbd-amber">→ Right</kbd> or keys <kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd></span>
+        </li>
+        <li>
+          <span><strong>Quick Cash Tender Adjustment (In Cash Mode)</strong></span>
+          <span><kbd>↑</kbd> (+Rs. 500) &nbsp; <kbd>↓</kbd> (-Rs. 500)</span>
+        </li>
+        <li>
+          <span><strong>Complete Payment & Trigger Thermal Printer</strong></span>
+          <span><kbd class="kbd-emerald">Enter ↵</kbd></span>
+        </li>
+        <li>
+          <span><strong>Cancel / Exit Settlement</strong></span>
+          <span><kbd>Esc</kbd></span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Summary Cheatsheet Table -->
+  <div class="section">
+    <h2><span class="num-circle">★</span> Cashier Quick-Reference Keyboard Cheatsheet</h2>
+    <table class="ref-table">
+      <thead>
+        <tr>
+          <th style="width: 25%;">Screen / Context</th>
+          <th style="width: 30%;">Key Combination</th>
+          <th>Action / Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Portion Modal</strong></td>
+          <td><kbd class="kbd-amber">↑</kbd> <kbd class="kbd-amber">↓</kbd></td>
+          <td>Select portion size (Half / Full / Standard)</td>
+        </tr>
+        <tr>
+          <td><strong>Portion Modal</strong></td>
+          <td><kbd class="kbd-amber">←</kbd> <kbd class="kbd-amber">→ (or - / +)</kbd></td>
+          <td>Increase or decrease quantity by 1</td>
+        </tr>
+        <tr>
+          <td><strong>Portion Modal</strong></td>
+          <td><kbd>0</kbd> to <kbd>9</kbd></td>
+          <td>Set exact numeric quantity directly</td>
+        </tr>
+        <tr>
+          <td><strong>Portion Modal</strong></td>
+          <td><kbd class="kbd-emerald">Enter ↵</kbd> / <kbd>Esc</kbd></td>
+          <td>Confirm & Add to Order / Cancel</td>
+        </tr>
+        <tr>
+          <td><strong>Dining Floor (Dine-In)</strong></td>
+          <td><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></td>
+          <td>Navigate through tables in active zone</td>
+        </tr>
+        <tr>
+          <td><strong>Dining Floor (Dine-In)</strong></td>
+          <td><kbd class="kbd-emerald">Enter ↵</kbd></td>
+          <td>Assign table and open menu catalog</td>
+        </tr>
+        <tr>
+          <td><strong>Takeaway & Delivery</strong></td>
+          <td><kbd class="kbd-amber">Tab</kbd></td>
+          <td>Toggle Takeaway queues ⇄ Delivery queues</td>
+        </tr>
+        <tr>
+          <td><strong>Takeaway & Delivery</strong></td>
+          <td><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></td>
+          <td>Move focus across queue cards</td>
+        </tr>
+        <tr>
+          <td><strong>Takeaway & Delivery</strong></td>
+          <td><kbd class="kbd-emerald">Enter ↵</kbd> / <kbd>Esc</kbd></td>
+          <td>Select queue slot & load cart / Close modal</td>
+        </tr>
+        <tr>
+          <td><strong>Main Ordering Screen</strong></td>
+          <td><kbd class="kbd-amber">↑</kbd> <kbd class="kbd-amber">↓</kbd> (in Cart)</td>
+          <td>Move focus across items in active bill</td>
+        </tr>
+        <tr>
+          <td><strong>Main Ordering Screen</strong></td>
+          <td><kbd class="kbd-amber">←</kbd> <kbd class="kbd-amber">→ (or - / +)</kbd></td>
+          <td>Decrease (-1) or Increase (+1) item quantity</td>
+        </tr>
+        <tr>
+          <td><strong>Main Ordering Screen</strong></td>
+          <td><kbd>Delete</kbd></td>
+          <td>Remove focused item from active bill</td>
+        </tr>
+        <tr>
+          <td><strong>Main Ordering Screen</strong></td>
+          <td>Numeric keys (e.g. <kbd>1</kbd><kbd>0</kbd><kbd>1</kbd>)</td>
+          <td>Punch item by hotkey number</td>
+        </tr>
+        <tr>
+          <td><strong>Payment Modal</strong></td>
+          <td><kbd>←</kbd> <kbd>→</kbd> or <kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd></td>
+          <td>Switch method (Cash / Card / LankaQR)</td>
+        </tr>
+        <tr>
+          <td><strong>Payment Modal</strong></td>
+          <td><kbd>↑</kbd> / <kbd>↓</kbd></td>
+          <td>Adjust cash tendered (±Rs. 500 increments)</td>
+        </tr>
+        <tr>
+          <td><strong>Payment Modal</strong></td>
+          <td><kbd class="kbd-emerald">Enter ↵</kbd> / <kbd>Esc</kbd></td>
+          <td>Complete transaction & print / Cancel</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    <span>Southern Spoon Restaurant POS System • Sri Lanka</span>
+    <span>Manager / Cashier Training Reference • Generated: October 2026</span>
+  </div>
+
+</body>
+</html>
